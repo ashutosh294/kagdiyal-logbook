@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Kagdiyal Holidays – Logbook</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+<style>
+  :root {
+    --bg: #0f0f13;
+    --surface: #1a1a22;
+    --surface2: #22222e;
+    --border: #2e2e3e;
+    --accent: #f0a500;
+    --accent2: #e07b00;
+    --text: #e8e8f0;
+    --text2: #9090a8;
+    --red: #e05555;
+    --green: #4caf7d;
+    --radius: 10px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; }
+
+  /* ── TOP NAV ── */
+  .topbar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 56px;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .topbar-brand { display: flex; align-items: center; gap: 10px; }
+  .topbar-brand .logo { font-family: 'Rajdhani', sans-serif; font-size: 1.3rem; font-weight: 700; color: var(--accent); letter-spacing: 1px; }
+  .topbar-brand .sub { font-size: 0.72rem; color: var(--text2); text-transform: uppercase; letter-spacing: 2px; }
+  .topbar-nav { display: flex; gap: 8px; }
+  .nav-btn { background: none; border: 1px solid var(--border); color: var(--text2); padding: 6px 14px; border-radius: 6px; font-size: 0.82rem; cursor: pointer; transition: all .2s; font-family: 'DM Sans', sans-serif; }
+  .nav-btn:hover, .nav-btn.active { background: var(--accent); border-color: var(--accent); color: #000; font-weight: 600; }
+  .topbar-right { display: flex; align-items: center; gap: 10px; }
+  .user-chip { background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 4px 12px; font-size: 0.78rem; color: var(--text2); }
+  .logout-btn { background: none; border: 1px solid var(--red); color: var(--red); padding: 5px 12px; border-radius: 6px; font-size: 0.78rem; cursor: pointer; transition: all .2s; font-family: 'DM Sans', sans-serif; }
+  .logout-btn:hover { background: var(--red); color: #fff; }
+
+  /* ── LOGIN ── */
+  #loginScreen {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    background: radial-gradient(ellipse at 30% 40%, #1e1a0e 0%, #0f0f13 70%);
+  }
+  .login-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 40px 36px; width: 360px; }
+  .login-card .brand { font-family: 'Rajdhani', sans-serif; font-size: 1.6rem; font-weight: 700; color: var(--accent); text-align: center; margin-bottom: 4px; }
+  .login-card .brand-sub { text-align: center; color: var(--text2); font-size: 0.78rem; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 28px; }
+  .login-card label { font-size: 0.78rem; color: var(--text2); display: block; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 1px; }
+  .login-card input { width: 100%; background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 10px 14px; border-radius: 8px; font-size: 0.92rem; margin-bottom: 16px; font-family: 'DM Sans', sans-serif; }
+  .login-card input:focus { outline: none; border-color: var(--accent); }
+  .login-btn { width: 100%; background: var(--accent); color: #000; border: none; padding: 12px; border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; font-family: 'Rajdhani', sans-serif; letter-spacing: 1px; margin-top: 4px; }
+  .login-btn:hover { background: var(--accent2); }
+  .login-err { color: var(--red); font-size: 0.82rem; text-align: center; margin-top: 10px; }
+
+  /* ── MAIN LAYOUT ── */
+  #appScreen { display: none; }
+  .main-container { max-width: 1300px; margin: 0 auto; padding: 24px 16px; }
+
+  /* ── STATS BAR ── */
+  .stats-bar { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 24px; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 20px; }
+  .stat-card .s-label { font-size: 0.72rem; color: var(--text2); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 6px; }
+  .stat-card .s-val { font-family: 'Rajdhani', sans-serif; font-size: 1.7rem; font-weight: 700; color: var(--accent); }
+  .stat-card .s-sub { font-size: 0.75rem; color: var(--text2); margin-top: 2px; }
+
+  /* ── TOOLBAR ── */
+  .toolbar { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 18px; align-items: center; }
+  .toolbar input, .toolbar select { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 8px 12px; border-radius: 8px; font-size: 0.85rem; font-family: 'DM Sans', sans-serif; }
+  .toolbar input:focus, .toolbar select:focus { outline: none; border-color: var(--accent); }
+  .toolbar input[type="date"] { color-scheme: dark; }
+  .toolbar .spacer { flex: 1; }
+  .btn { padding: 8px 18px; border-radius: 8px; border: none; font-size: 0.85rem; font-weight: 600; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all .2s; }
+  .btn-primary { background: var(--accent); color: #000; }
+  .btn-primary:hover { background: var(--accent2); }
+  .btn-outline { background: none; border: 1px solid var(--border); color: var(--text2); }
+  .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+  .btn-green { background: var(--green); color: #fff; }
+  .btn-green:hover { opacity: .85; }
+
+  /* ── TABLE ── */
+  .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
+  thead th { background: var(--surface2); color: var(--text2); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1.5px; padding: 12px 14px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background .15s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--surface2); }
+  tbody td { padding: 11px 14px; color: var(--text); white-space: nowrap; }
+  .km-total { font-family: 'Rajdhani', sans-serif; font-weight: 700; color: var(--accent); font-size: 0.95rem; }
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--text2); }
+  .empty-state .ei { font-size: 2.5rem; margin-bottom: 10px; }
+
+  /* action btns */
+  .action-btns { display: flex; gap: 6px; }
+  .act-btn { background: none; border: 1px solid var(--border); color: var(--text2); padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; transition: all .2s; }
+  .act-btn.edit:hover { border-color: var(--accent); color: var(--accent); }
+  .act-btn.del:hover { border-color: var(--red); color: var(--red); }
+
+  /* ── MODAL ── */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 200; align-items: center; justify-content: center; padding: 16px; }
+  .modal-overlay.open { display: flex; }
+  .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; width: 100%; max-width: 620px; max-height: 90vh; overflow-y: auto; }
+  .modal-header { padding: 20px 24px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .modal-header h2 { font-family: 'Rajdhani', sans-serif; font-size: 1.25rem; font-weight: 700; color: var(--accent); }
+  .modal-close { background: none; border: none; color: var(--text2); font-size: 1.4rem; cursor: pointer; line-height: 1; }
+  .modal-body { padding: 20px 24px; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-group.full { grid-column: 1 / -1; }
+  .form-group label { font-size: 0.73rem; color: var(--text2); text-transform: uppercase; letter-spacing: 1px; }
+  .form-group input, .form-group select { background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 9px 12px; border-radius: 8px; font-size: 0.9rem; font-family: 'DM Sans', sans-serif; }
+  .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--accent); }
+  .form-group input[type="date"], .form-group input[type="time"] { color-scheme: dark; }
+  .modal-footer { padding: 16px 24px 20px; border-top: 1px solid var(--border); display: flex; gap: 10px; justify-content: flex-end; }
+
+  /* ── TOAST ── */
+  .toast { position: fixed; bottom: 24px; right: 24px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 12px 20px; border-radius: 10px; font-size: 0.85rem; z-index: 999; opacity: 0; transform: translateY(10px); transition: all .3s; pointer-events: none; }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast.success { border-color: var(--green); color: var(--green); }
+  .toast.error { border-color: var(--red); color: var(--red); }
+
+  /* ── SPINNER ── */
+  .spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin .7s linear infinite; vertical-align: middle; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .loading-row td { text-align: center; padding: 40px; color: var(--text2); }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 600px) {
+    .topbar-nav { display: none; }
+    .form-grid { grid-template-columns: 1fr; }
+    .stats-bar { grid-template-columns: 1fr 1fr; }
+    .toolbar { flex-direction: column; align-items: stretch; }
+  }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="brand">KAGDIYAL HOLIDAYS</div>
+    <div class="brand-sub">Vehicle Log Book</div>
+    <label>Username</label>
+    <input type="text" id="loginUser" placeholder="Enter username" />
+    <label>Password</label>
+    <input type="password" id="loginPass" placeholder="Enter password" onkeydown="if(event.key==='Enter')doLogin()" />
+    <button class="login-btn" onclick="doLogin()">LOGIN</button>
+    <div class="login-err" id="loginErr"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="appScreen">
+  <div class="topbar">
+    <div class="topbar-brand">
+      <div>
+        <div class="logo">KAGDIYAL HOLIDAYS</div>
+        <div class="sub">Log Book</div>
+      </div>
+    </div>
+    <div class="topbar-nav">
+      <button class="nav-btn" onclick="window.location.href='https://kagdiyal-billing.vercel.app'">💰 Billing</button>
+      <button class="nav-btn active">📋 Logbook</button>
+    </div>
+    <div class="topbar-right">
+      <span class="user-chip" id="userChip">—</span>
+      <button class="logout-btn" onclick="doLogout()">Logout</button>
+    </div>
+  </div>
+
+  <div class="main-container">
+    <!-- Stats -->
+    <div class="stats-bar">
+      <div class="stat-card">
+        <div class="s-label">Today's Trips</div>
+        <div class="s-val" id="statToday">0</div>
+        <div class="s-sub">vehicles on duty</div>
+      </div>
+      <div class="stat-card">
+        <div class="s-label">This Month</div>
+        <div class="s-val" id="statMonth">0</div>
+        <div class="s-sub">total trips</div>
+      </div>
+      <div class="stat-card">
+        <div class="s-label">Total KM (Month)</div>
+        <div class="s-val" id="statKM">0</div>
+        <div class="s-sub">kilometres covered</div>
+      </div>
+      <div class="stat-card">
+        <div class="s-label">Active Vehicles</div>
+        <div class="s-val" id="statVehicles">0</div>
+        <div class="s-sub">unique this month</div>
+      </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <input type="date" id="filterDate" onchange="loadEntries()" title="Filter by Date"/>
+      <input type="text" id="filterVehicle" placeholder="🔍 Vehicle No." oninput="loadEntries()" style="width:150px"/>
+      <input type="text" id="filterDriver" placeholder="🔍 Driver Name" oninput="loadEntries()" style="width:150px"/>
+      <button class="btn btn-outline" onclick="clearFilters()">Clear</button>
+      <div class="spacer"></div>
+      <button class="btn btn-green" onclick="exportExcel()">⬇ Excel</button>
+      <button class="btn btn-primary" id="addEntryBtn" onclick="openModal()">+ Add Entry</button>
+    </div>
+
+    <!-- Table -->
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Date</th>
+            <th>Vehicle No.</th>
+            <th>V. Type</th>
+            <th>Vendor Code</th>
+            <th>Driver Name</th>
+            <th>Location</th>
+            <th>S. Time</th>
+            <th>C. Time</th>
+            <th>S. KM</th>
+            <th>C. KM</th>
+            <th>Total KM</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="logbookBody">
+          <tr class="loading-row"><td colspan="13"><span class="spinner"></span> Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="modalTitle">New Entry</h2>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Date *</label>
+          <input type="date" id="fDate" />
+        </div>
+        <div class="form-group">
+          <label>Vehicle No. *</label>
+          <input type="text" id="fVehicleNo" placeholder="e.g. DL 1C 1234" list="vehicleList"/>
+          <datalist id="vehicleList"></datalist>
+        </div>
+        <div class="form-group">
+          <label>Vehicle Type</label>
+          <select id="fVehicleType">
+            <option value="">-- Select --</option>
+            <option>Sedan</option>
+            <option>SUV</option>
+            <option>Innova</option>
+            <option>Innova Crysta</option>
+            <option>Tempo Traveller</option>
+            <option>Bus</option>
+            <option>Luxury</option>
+            <option>Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Vendor Code</label>
+          <input type="text" id="fVendorCode" placeholder="V.C" />
+        </div>
+        <div class="form-group full">
+          <label>Driver Name *</label>
+          <input type="text" id="fDriverName" placeholder="Driver full name" list="driverList"/>
+          <datalist id="driverList"></datalist>
+        </div>
+        <div class="form-group full">
+          <label>Location / Route</label>
+          <input type="text" id="fLocation" placeholder="e.g. Delhi to Agra" />
+        </div>
+        <div class="form-group">
+          <label>Starting Time</label>
+          <input type="time" id="fStartTime" />
+        </div>
+        <div class="form-group">
+          <label>Closing Time</label>
+          <input type="time" id="fCloseTime" />
+        </div>
+        <div class="form-group">
+          <label>Starting KM</label>
+          <input type="number" id="fStartKM" placeholder="0" oninput="calcKM()" />
+        </div>
+        <div class="form-group">
+          <label>Closing KM</label>
+          <input type="number" id="fCloseKM" placeholder="0" oninput="calcKM()" />
+        </div>
+        <div class="form-group">
+          <label>Total KM (auto)</label>
+          <input type="number" id="fTotalKM" placeholder="—" readonly style="opacity:.6" />
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" id="saveBtn" onclick="saveEntry()">Save Entry</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── CONFIG ───────────────────────────────────────────────
+const SUPABASE_URL  = 'https://ckcjzvfnkckuesqqmuks.supabase.co';
+const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrY2p6dmZua2NrdWVzcXFtdWtzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwMzQ5MjQsImV4cCI6MjA5MDYxMDkyNH0.Hd0al1x3a7-refUXc8RVoBmyEBq6sQ9ovHbYJKVlWAM';
+
+// ─── INIT ─────────────────────────────────────────────────
+const { createClient } = supabase;
+const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let currentUser = null;
+let editingId   = null;
+let allEntries  = [];
+
+// ─── AUTH ─────────────────────────────────────────────────
+const SESSION_KEY = 'kh_logbook_auth';
+const SESSION_TTL = 8 * 60 * 60 * 1000; // 8 hours
+
+async function hashPass(pass) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pass));
+  return [...new Uint8Array(buf)].map(x => x.toString(16).padStart(2,'0')).join('');
+}
+
+function saveSession(user) {
+  sessionStorage.setItem(SESSION_KEY, JSON.stringify({ user, ts: Date.now() }));
+}
+
+function checkSession() {
+  try {
+    const s = JSON.parse(sessionStorage.getItem(SESSION_KEY));
+    if (!s || Date.now() - s.ts > SESSION_TTL) { sessionStorage.removeItem(SESSION_KEY); return null; }
+    return s.user;
+  } catch { return null; }
+}
+
+async function doLogin() {
+  const u = document.getElementById('loginUser').value.trim();
+  const p = document.getElementById('loginPass').value.trim();
+  if (!u || !p) { showErr('Enter username and password'); return; }
+
+  const hashed = await hashPass(p);
+
+  // Try hashed password first, fallback to plain (for existing users)
+  let { data, error } = await db
+    .from('app_users')
+    .select('*')
+    .eq('username', u)
+    .eq('password_hash', hashed)
+    .single();
+
+  // Fallback: plain text (purane users ke liye)
+  if (error || !data) {
+    ({ data, error } = await db
+      .from('app_users')
+      .select('*')
+      .eq('username', u)
+      .eq('password', p)
+      .single());
+  }
+
+  if (error || !data) { showErr('Invalid credentials'); return; }
+
+  currentUser = data;
+  saveSession(data);
+  startApp(data);
+}
+
+function startApp(data) {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('appScreen').style.display   = 'block';
+  document.getElementById('userChip').textContent = `${data.username} (${data.role || 'Admin'})`;
+
+  if (data.role === 'Staff') {
+    document.getElementById('addEntryBtn').style.display = 'none';
+  }
+
+  loadEntries();
+  loadAutocomplete();
+  updateStats();
+}
+
+function doLogout() {
+  currentUser = null;
+  sessionStorage.removeItem(SESSION_KEY);
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('appScreen').style.display   = 'none';
+  document.getElementById('loginUser').value = '';
+  document.getElementById('loginPass').value = '';
+}
+
+function showErr(msg) { document.getElementById('loginErr').textContent = msg; }
+
+// Auto-login if session valid
+window.addEventListener('DOMContentLoaded', () => {
+  const saved = checkSession();
+  if (saved) { currentUser = saved; startApp(saved); }
+});
+
+// ─── LOAD ENTRIES ─────────────────────────────────────────
+async function loadEntries() {
+  const tbody = document.getElementById('logbookBody');
+  tbody.innerHTML = '<tr class="loading-row"><td colspan="13"><span class="spinner"></span> Loading...</td></tr>';
+
+  let q = db.from('logbook').select('*').order('entry_date', { ascending: false }).order('created_at', { ascending: false });
+
+  const dateVal    = document.getElementById('filterDate').value;
+  const vehicleVal = document.getElementById('filterVehicle').value.trim();
+  const driverVal  = document.getElementById('filterDriver').value.trim();
+
+  if (dateVal)    q = q.eq('entry_date', dateVal);
+  if (vehicleVal) q = q.ilike('vehicle_no', `%${vehicleVal}%`);
+  if (driverVal)  q = q.ilike('driver_name', `%${driverVal}%`);
+
+  const { data, error } = await q;
+  if (error) { toast('Error loading entries', 'error'); tbody.innerHTML = '<tr><td colspan="13" style="text-align:center;padding:30px;color:var(--red)">Error loading data</td></tr>'; return; }
+
+  allEntries = data || [];
+  renderTable(allEntries);
+}
+
+function renderTable(rows) {
+  const tbody = document.getElementById('logbookBody');
+  if (!rows.length) {
+    tbody.innerHTML = `<tr><td colspan="13"><div class="empty-state"><div class="ei">📋</div><div>No entries found</div></div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = rows.map((r, i) => {
+    const totalKM = (r.closing_km != null && r.starting_km != null) ? (r.closing_km - r.starting_km) : '—';
+    const canEdit = currentUser && currentUser.role === 'Admin';
+    return `<tr>
+      <td style="color:var(--text2)">${i+1}</td>
+      <td>${formatDate(r.entry_date)}</td>
+      <td><strong>${r.vehicle_no || '—'}</strong></td>
+      <td>${r.vehicle_type || '—'}</td>
+      <td>${r.vendor_code || '—'}</td>
+      <td>${r.driver_name || '—'}</td>
+      <td>${r.location || '—'}</td>
+      <td>${r.starting_time || '—'}</td>
+      <td>${r.closing_time || '—'}</td>
+      <td>${r.starting_km ?? '—'}</td>
+      <td>${r.closing_km ?? '—'}</td>
+      <td class="km-total">${totalKM !== '—' ? totalKM + ' km' : '—'}</td>
+      <td>
+        ${canEdit ? `<div class="action-btns">
+          <button class="act-btn edit" onclick="openModal('${r.id}')">Edit</button>
+          ${currentUser && currentUser.role !== 'Staff' ? `<button class="act-btn del" onclick="deleteEntry('${r.id}')">Del</button>` : ''}
+        </div>` : '—'}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ─── STATS ────────────────────────────────────────────────
+async function updateStats() {
+  const today = new Date().toISOString().split('T')[0];
+  const firstOfMonth = today.slice(0,8) + '01';
+
+  const [todayRes, monthRes] = await Promise.all([
+    db.from('logbook').select('id', { count: 'exact' }).eq('entry_date', today),
+    db.from('logbook').select('starting_km, closing_km, vehicle_no').gte('entry_date', firstOfMonth)
+  ]);
+
+  const todayCount = todayRes.count || 0;
+  const monthData  = monthRes.data || [];
+  const totalKM    = monthData.reduce((s, r) => {
+    if (r.closing_km != null && r.starting_km != null) s += (r.closing_km - r.starting_km);
+    return s;
+  }, 0);
+  const uniqueVehicles = new Set(monthData.map(r => r.vehicle_no).filter(Boolean)).size;
+
+  document.getElementById('statToday').textContent    = todayCount;
+  document.getElementById('statMonth').textContent    = monthData.length;
+  document.getElementById('statKM').textContent       = fmt(totalKM);
+  document.getElementById('statVehicles').textContent = uniqueVehicles;
+}
+
+// ─── AUTOCOMPLETE ─────────────────────────────────────────
+async function loadAutocomplete() {
+  const { data } = await db.from('logbook').select('vehicle_no, driver_name');
+  if (!data) return;
+  const vehicles = [...new Set(data.map(r => r.vehicle_no).filter(Boolean))];
+  const drivers  = [...new Set(data.map(r => r.driver_name).filter(Boolean))];
+
+  document.getElementById('vehicleList').innerHTML = vehicles.map(v => `<option value="${v}">`).join('');
+  document.getElementById('driverList').innerHTML  = drivers.map(d => `<option value="${d}">`).join('');
+}
+
+// ─── MODAL ────────────────────────────────────────────────
+function openModal(id = null) {
+  editingId = id;
+  document.getElementById('modalTitle').textContent = id ? 'Edit Entry' : 'New Entry';
+  document.getElementById('modalOverlay').classList.add('open');
+
+  if (!id) {
+    clearForm();
+    document.getElementById('fDate').value = new Date().toISOString().split('T')[0];
+  } else {
+    const r = allEntries.find(e => e.id === id);
+    if (!r) return;
+    document.getElementById('fDate').value        = r.entry_date || '';
+    document.getElementById('fVehicleNo').value   = r.vehicle_no || '';
+    document.getElementById('fVehicleType').value = r.vehicle_type || '';
+    document.getElementById('fVendorCode').value  = r.vendor_code || '';
+    document.getElementById('fDriverName').value  = r.driver_name || '';
+    document.getElementById('fLocation').value    = r.location || '';
+    document.getElementById('fStartTime').value   = r.starting_time || '';
+    document.getElementById('fCloseTime').value   = r.closing_time || '';
+    document.getElementById('fStartKM').value     = r.starting_km ?? '';
+    document.getElementById('fCloseKM').value     = r.closing_km ?? '';
+    calcKM();
+  }
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+  editingId = null;
+}
+
+function clearForm() {
+  ['fDate','fVehicleNo','fVendorCode','fDriverName','fLocation','fStartTime','fCloseTime','fStartKM','fCloseKM','fTotalKM'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('fVehicleType').value = '';
+}
+
+function calcKM() {
+  const s = parseFloat(document.getElementById('fStartKM').value);
+  const c = parseFloat(document.getElementById('fCloseKM').value);
+  document.getElementById('fTotalKM').value = (!isNaN(s) && !isNaN(c)) ? (c - s) : '';
+}
+
+// ─── SAVE ─────────────────────────────────────────────────
+async function saveEntry() {
+  const date   = document.getElementById('fDate').value;
+  const vehicle= document.getElementById('fVehicleNo').value.trim();
+  const driver = document.getElementById('fDriverName').value.trim();
+
+  if (!date || !vehicle || !driver) { toast('Date, Vehicle No. & Driver are required', 'error'); return; }
+
+  const payload = {
+    entry_date:    date,
+    vehicle_no:    vehicle.toUpperCase(),
+    vehicle_type:  document.getElementById('fVehicleType').value,
+    vendor_code:   document.getElementById('fVendorCode').value.trim(),
+    driver_name:   document.getElementById('fDriverName').value.trim(),
+    location:      document.getElementById('fLocation').value.trim(),
+    starting_time: document.getElementById('fStartTime').value || null,
+    closing_time:  document.getElementById('fCloseTime').value || null,
+    starting_km:   parseFloat(document.getElementById('fStartKM').value) || null,
+    closing_km:    parseFloat(document.getElementById('fCloseKM').value) || null,
+  };
+
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = true; btn.textContent = 'Saving...';
+
+  let error;
+  if (editingId) {
+    ({ error } = await db.from('logbook').update(payload).eq('id', editingId));
+  } else {
+    ({ error } = await db.from('logbook').insert([payload]));
+  }
+
+  btn.disabled = false; btn.textContent = 'Save Entry';
+
+  if (error) { toast('Save failed: ' + error.message, 'error'); return; }
+
+  toast(editingId ? 'Entry updated!' : 'Entry added!', 'success');
+  closeModal();
+  loadEntries();
+  updateStats();
+  loadAutocomplete();
+}
+
+// ─── DELETE ───────────────────────────────────────────────
+async function deleteEntry(id) {
+  if (!confirm('Delete this entry?')) return;
+  const { error } = await db.from('logbook').delete().eq('id', id);
+  if (error) { toast('Delete failed', 'error'); return; }
+  toast('Entry deleted', 'success');
+  loadEntries();
+  updateStats();
+}
+
+// ─── FILTERS ──────────────────────────────────────────────
+function clearFilters() {
+  document.getElementById('filterDate').value    = '';
+  document.getElementById('filterVehicle').value = '';
+  document.getElementById('filterDriver').value  = '';
+  loadEntries();
+}
+
+// ─── EXCEL EXPORT ─────────────────────────────────────────
+function exportExcel() {
+  if (!allEntries.length) { toast('No data to export', 'error'); return; }
+  const rows = allEntries.map((r, i) => ({
+    '#': i+1,
+    'Date': formatDate(r.entry_date),
+    'Vehicle No': r.vehicle_no || '',
+    'Vehicle Type': r.vehicle_type || '',
+    'Vendor Code': r.vendor_code || '',
+    'Driver Name': r.driver_name || '',
+    'Location': r.location || '',
+    'Start Time': r.starting_time || '',
+    'Close Time': r.closing_time || '',
+    'Start KM': r.starting_km ?? '',
+    'Close KM': r.closing_km ?? '',
+    'Total KM': (r.closing_km != null && r.starting_km != null) ? (r.closing_km - r.starting_km) : '',
+  }));
+
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Logbook');
+  XLSX.writeFile(wb, `Kagdiyal_Logbook_${new Date().toISOString().slice(0,10)}.xlsx`);
+  toast('Excel exported!', 'success');
+}
+
+// ─── HELPERS ──────────────────────────────────────────────
+function formatDate(d) {
+  if (!d) return '—';
+  const [y, m, day] = d.split('-');
+  return `${day}/${m}/${y}`;
+}
+
+function fmt(n) {
+  if (!n) return '0';
+  return new Intl.NumberFormat('en-IN').format(Math.round(n));
+}
+
+function toast(msg, type = '') {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `toast show ${type}`;
+  setTimeout(() => el.className = 'toast', 3000);
+}
+
+// Close modal on outside click
+document.getElementById('modalOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+</script>
+</body>
+</html>
