@@ -21,12 +21,9 @@
   <meta name="description" content="Kagdiyal Holidays – Vehicle Log Book"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Kagdiyal Holidays – Logbook</title>
-<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin/>
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
-<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=DM+Sans:wght@400;500&display=swap" onload="this.rel='stylesheet'"/>
-<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=DM+Sans:wght@400;500&display=swap"/></noscript>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js" defer></script>
-<!-- SheetJS loaded on demand -->
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 <style>
   :root {
     --bg: #0f0f13;
@@ -208,14 +205,6 @@
     .toolbar { flex-direction: column; align-items: stretch; }
   }
 </style>
-<link rel="dns-prefetch" href="https://ckcjzvfnkckuesqqmuks.supabase.co"/>
-<link rel="preconnect" href="https://ckcjzvfnkckuesqqmuks.supabase.co" crossorigin/>
-<style>
-  /* System font fallback while custom fonts load - prevents FOIT */
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
-  body.fonts-loaded { font-family: 'DM Sans', sans-serif; }
-  .logo, .modal-header h2, .s-val, .km-total, .rc-name { font-family: 'Rajdhani', 'Arial Black', sans-serif; }
-</style>
 </head>
 <body>
 
@@ -290,8 +279,8 @@
       <div class="toolbar">
         <input type="date" id="filterFrom" onchange="loadEntries()" title="From Date" placeholder="From"/>
         <input type="date" id="filterTo" onchange="loadEntries()" title="To Date" placeholder="To"/>
-        <input type="text" id="filterVehicle" placeholder="🔍 Vehicle No." oninput="debouncedLoad()" style="width:140px"/>
-        <input type="text" id="filterDriver" placeholder="🔍 Driver Name" oninput="debouncedLoad()" style="width:140px"/>
+        <input type="text" id="filterVehicle" placeholder="🔍 Vehicle No." oninput="loadEntries()" style="width:140px"/>
+        <input type="text" id="filterDriver" placeholder="🔍 Driver Name" oninput="loadEntries()" style="width:140px"/>
         <button class="btn btn-outline" onclick="clearFilters()">Clear</button>
         <div class="spacer"></div>
         <button class="btn btn-outline" onclick="printLogbook()" title="Print / PDF">🖨️ Print</button>
@@ -425,7 +414,7 @@
         </div>
         <div class="form-group">
           <label>Fuel Type</label>
-          <select id="fFuelType" onchange="updateFuelUnit()">
+          <select id="fFuelType">
             <option value="">-- None --</option>
             <option value="Petrol">Petrol</option>
             <option value="Diesel">Diesel</option>
@@ -433,8 +422,8 @@
           </select>
         </div>
         <div class="form-group">
-          <label id="fuelUnitLabel">Fuel Litres</label>
-          <input type="number" id="fFuelLitres" placeholder="0.0" step="0.1" oninput="updateFuelUnit()" />
+          <label>Fuel Litres</label>
+          <input type="number" id="fFuelLitres" placeholder="0.0" step="0.1" />
         </div>
         <div class="form-group">
           <label>Fuel Amount (₹)</label>
@@ -547,47 +536,11 @@ function doLogout() {
 
 function showErr(msg) { document.getElementById('loginErr').textContent = msg; }
 
-// Font load observer — removes FOIT
-if ('fonts' in document) {
-  document.fonts.ready.then(() => document.body.classList.add('fonts-loaded'));
-} else { document.body.classList.add('fonts-loaded'); }
-
-// Debounce helper — prevents DB query on every keystroke
-let _debTimer;
-function debouncedLoad() { clearTimeout(_debTimer); _debTimer = setTimeout(loadEntries, 320); }
-
-// Lazy SheetJS loader
-let _xlsxReady = false;
-function ensureXLSX(cb) {
-  if (_xlsxReady) { cb(); return; }
-  const s = document.createElement('script');
-  s.src = 'https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js';
-  s.onload = () => { _xlsxReady = true; cb(); };
-  document.head.appendChild(s);
-}
-
-// CNG = kg, others = L
-function updateFuelUnit() {
-  const type = document.getElementById('fFuelType').value;
-  const label = document.getElementById('fuelUnitLabel');
-  const input = document.getElementById('fFuelLitres');
-  if (type === 'CNG') {
-    label.textContent = 'Fuel (kg)';
-    input.placeholder = '0.0 kg';
-  } else {
-    label.textContent = 'Fuel (Litres)';
-    input.placeholder = '0.0 L';
-  }
-}
-
-// Auto-login if session valid — defer-safe
-function _initApp() {
+// Auto-login if session valid
+window.addEventListener('DOMContentLoaded', () => {
   const saved = checkSession();
   if (saved) { currentUser = saved; startApp(saved); }
-}
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', _initApp);
-} else { _initApp(); }
+});
 
 // ─── VIEW SWITCH ──────────────────────────────────────────
 function switchView(name) {
@@ -603,7 +556,7 @@ async function loadEntries() {
   const tbody = document.getElementById('logbookBody');
   tbody.innerHTML = '<tr class="loading-row"><td colspan="14"><span class="spinner"></span> Loading...</td></tr>';
 
-  let q = db.from('logbook').select('*').order('entry_date', { ascending: false }).order('created_at', { ascending: false }).limit(500);
+  let q = db.from('logbook').select('*').order('entry_date', { ascending: false }).order('created_at', { ascending: false });
 
   const fromVal    = document.getElementById('filterFrom').value;
   const toVal      = document.getElementById('filterTo').value;
@@ -651,7 +604,7 @@ function renderTable(rows) {
       <td>${r.starting_km ?? '—'}</td>
       <td>${r.closing_km ?? '—'}</td>
       <td class="km-total">${totalKM !== '—' ? totalKM + ' km' : '—'}</td>
-      <td>${fuelTag(r.fuel_type)}${r.fuel_litres ? `<br><small style="color:var(--text2)">${r.fuel_litres}${r.fuel_type==='CNG'?'kg':'L'} ₹${r.fuel_amount||0}</small>` : ''}</td>
+      <td>${fuelTag(r.fuel_type)}${r.fuel_litres ? `<br><small style="color:var(--text2)">${r.fuel_litres}L ₹${r.fuel_amount||0}</small>` : ''}</td>
       <td>
         ${canEdit ? `<div class="action-btns">
           <button class="act-btn edit" onclick="openModal('${r.id}')">Edit</button>
@@ -825,9 +778,6 @@ function clearDriverFilter() {
 
 // ─── EXCEL EXPORT ─────────────────────────────────────────
 function exportExcel() {
-  ensureXLSX(_doExport);
-}
-function _doExport() {
   if (!allEntries.length) { toast('No data to export', 'error'); return; }
   const rows = allEntries.map((r, i) => ({
     '#': i+1,
@@ -843,7 +793,7 @@ function _doExport() {
     'Close KM': r.closing_km ?? '',
     'Total KM': (r.closing_km != null && r.starting_km != null) ? (r.closing_km - r.starting_km) : '',
     'Fuel Type': r.fuel_type || '',
-    'Fuel Qty': r.fuel_litres ? `${r.fuel_litres}${r.fuel_type==='CNG'?'kg':'L'}` : '',
+    'Fuel Litres': r.fuel_litres ?? '',
     'Fuel Amount (₹)': r.fuel_amount ?? '',
     'Remarks': r.remarks || '',
   }));
@@ -853,7 +803,6 @@ function _doExport() {
   XLSX.utils.book_append_sheet(wb, ws, 'Logbook');
   XLSX.writeFile(wb, `Kagdiyal_Logbook_${new Date().toISOString().slice(0,10)}.xlsx`);
   toast('Excel exported!', 'success');
-}
 }
 
 // ─── HELPERS ──────────────────────────────────────────────
@@ -1011,7 +960,7 @@ if ('serviceWorker' in navigator) {
   const swCode = `
 const CACHE = 'kh-logbook-v1';
 const ASSETS = [
-  'https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=DM+Sans:wght@400;500&display=swap',
+  'https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=DM+Sans:wght@300;400;500&display=swap',
   'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
   'https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js'
 ];
