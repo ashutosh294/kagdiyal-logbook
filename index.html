@@ -149,6 +149,54 @@
   @keyframes spin { to { transform: rotate(360deg); } }
   .loading-row td { text-align: center; padding: 40px; color: var(--text2); }
 
+
+  /* ── TABS ── */
+  .view-tabs { display: flex; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; }
+  .view-tab { background: none; border: 1px solid var(--border); color: var(--text2); padding: 7px 18px; border-radius: 8px; font-size: 0.83rem; cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all .2s; }
+  .view-tab.active { background: var(--accent); border-color: var(--accent); color: #000; font-weight: 700; }
+  .view-section { display: none; }
+  .view-section.active { display: block; }
+
+  /* ── REPORT CARDS ── */
+  .report-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
+  .report-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 20px; }
+  .report-card .rc-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+  .report-card .rc-name { font-weight: 700; font-size: 0.95rem; color: var(--text); }
+  .report-card .rc-badge { font-size: 0.7rem; padding: 2px 8px; border-radius: 12px; background: var(--surface2); color: var(--text2); border: 1px solid var(--border); }
+  .report-card .rc-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .report-card .rc-stat { background: var(--surface2); border-radius: 6px; padding: 8px 10px; }
+  .report-card .rc-stat .rs-label { font-size: 0.68rem; color: var(--text2); text-transform: uppercase; letter-spacing: 1px; }
+  .report-card .rc-stat .rs-val { font-family: 'Rajdhani', sans-serif; font-size: 1.1rem; font-weight: 700; color: var(--accent); }
+  .report-card .rc-fuel { margin-top: 10px; font-size: 0.78rem; color: var(--text2); display: flex; gap: 10px; flex-wrap: wrap; }
+  .report-card .rc-fuel span { background: var(--surface2); padding: 3px 8px; border-radius: 6px; }
+
+  /* ── FUEL BADGE ── */
+  .fuel-tag { display: inline-block; font-size: 0.7rem; padding: 2px 7px; border-radius: 10px; font-weight: 600; }
+  .fuel-petrol { background: #2a1f0e; color: #f0a500; border: 1px solid #f0a50040; }
+  .fuel-diesel  { background: #0e1a2a; color: #4a9eff; border: 1px solid #4a9eff40; }
+  .fuel-cng     { background: #0e2a1a; color: #4caf7d; border: 1px solid #4caf7d40; }
+
+  /* ── PRINT ── */
+  @media print {
+    .topbar, .view-tabs, .toolbar, #installBanner, .toast, .modal-overlay { display: none !important; }
+    body { background: #fff !important; color: #000 !important; }
+    .main-container { padding: 0 !important; }
+    .stats-bar { display: grid !important; }
+    .stat-card { background: #f5f5f5 !important; border: 1px solid #ddd !important; color: #000 !important; break-inside: avoid; }
+    .stat-card .s-label, .stat-card .s-sub { color: #555 !important; }
+    .stat-card .s-val { color: #c47a00 !important; }
+    .table-wrap { border: 1px solid #ddd !important; background: #fff !important; }
+    thead th { background: #f0f0f0 !important; color: #333 !important; border-bottom: 1px solid #ccc !important; }
+    tbody td { color: #000 !important; }
+    tbody tr { border-bottom: 1px solid #eee !important; }
+    .km-total { color: #c47a00 !important; }
+    .action-btns { display: none !important; }
+    .print-header { display: block !important; }
+    @page { margin: 15mm; }
+  }
+  .print-header { display: none; text-align: center; margin-bottom: 16px; }
+  .print-header h1 { font-size: 1.4rem; font-weight: 700; }
+  .print-header p { font-size: 0.85rem; color: #555; }
   /* ── RESPONSIVE ── */
   @media (max-width: 600px) {
     .topbar-nav { display: none; }
@@ -218,42 +266,84 @@
       </div>
     </div>
 
-    <!-- Toolbar -->
-    <div class="toolbar">
-      <input type="date" id="filterDate" onchange="loadEntries()" title="Filter by Date"/>
-      <input type="text" id="filterVehicle" placeholder="🔍 Vehicle No." oninput="loadEntries()" style="width:150px"/>
-      <input type="text" id="filterDriver" placeholder="🔍 Driver Name" oninput="loadEntries()" style="width:150px"/>
-      <button class="btn btn-outline" onclick="clearFilters()">Clear</button>
-      <div class="spacer"></div>
-      <button class="btn btn-green" onclick="exportExcel()">⬇ Excel</button>
-      <button class="btn btn-primary" id="addEntryBtn" onclick="openModal()">+ Add Entry</button>
+    <!-- View Tabs -->
+    <div class="view-tabs">
+      <button class="view-tab active" onclick="switchView('logbook')">📋 Logbook</button>
+      <button class="view-tab" onclick="switchView('vehicle')">🚗 Vehicle Report</button>
+      <button class="view-tab" onclick="switchView('driver')">👤 Driver Report</button>
     </div>
 
-    <!-- Table -->
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Date</th>
-            <th>Vehicle No.</th>
-            <th>V. Type</th>
-            <th>Vendor Code</th>
-            <th>Driver Name</th>
-            <th>Location</th>
-            <th>S. Time</th>
-            <th>C. Time</th>
-            <th>S. KM</th>
-            <th>C. KM</th>
-            <th>Total KM</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody id="logbookBody">
-          <tr class="loading-row"><td colspan="13"><span class="spinner"></span> Loading...</td></tr>
-        </tbody>
-      </table>
+    <!-- ── LOGBOOK VIEW ── -->
+    <div id="viewLogbook" class="view-section active">
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <input type="date" id="filterFrom" onchange="loadEntries()" title="From Date" placeholder="From"/>
+        <input type="date" id="filterTo" onchange="loadEntries()" title="To Date" placeholder="To"/>
+        <input type="text" id="filterVehicle" placeholder="🔍 Vehicle No." oninput="loadEntries()" style="width:140px"/>
+        <input type="text" id="filterDriver" placeholder="🔍 Driver Name" oninput="loadEntries()" style="width:140px"/>
+        <button class="btn btn-outline" onclick="clearFilters()">Clear</button>
+        <div class="spacer"></div>
+        <button class="btn btn-outline" onclick="printLogbook()" title="Print / PDF">🖨️ Print</button>
+        <button class="btn btn-green" onclick="exportExcel()">⬇ Excel</button>
+        <button class="btn btn-primary" id="addEntryBtn" onclick="openModal()">+ Add Entry</button>
+      </div>
+      <!-- Print Header (visible only when printing) -->
+      <div class="print-header">
+        <h1>KAGDIYAL HOLIDAYS – Vehicle Log Book</h1>
+        <p id="printRange"></p>
+      </div>
+      <!-- Table -->
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Date</th>
+              <th>Vehicle No.</th>
+              <th>V. Type</th>
+              <th>Vendor</th>
+              <th>Driver</th>
+              <th>Location</th>
+              <th>S. Time</th>
+              <th>C. Time</th>
+              <th>S. KM</th>
+              <th>C. KM</th>
+              <th>Total KM</th>
+              <th>Fuel</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="logbookBody">
+            <tr class="loading-row"><td colspan="14"><span class="spinner"></span> Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
     </div>
+
+    <!-- ── VEHICLE REPORT VIEW ── -->
+    <div id="viewVehicle" class="view-section">
+      <div class="toolbar">
+        <input type="date" id="vFilterFrom" onchange="loadVehicleReport()" title="From Date"/>
+        <input type="date" id="vFilterTo" onchange="loadVehicleReport()" title="To Date"/>
+        <button class="btn btn-outline" onclick="clearVehicleFilter()">Clear</button>
+      </div>
+      <div class="report-grid" id="vehicleReportGrid">
+        <div style="color:var(--text2);padding:40px;text-align:center;grid-column:1/-1">Loading...</div>
+      </div>
+    </div>
+
+    <!-- ── DRIVER REPORT VIEW ── -->
+    <div id="viewDriver" class="view-section">
+      <div class="toolbar">
+        <input type="date" id="dFilterFrom" onchange="loadDriverReport()" title="From Date"/>
+        <input type="date" id="dFilterTo" onchange="loadDriverReport()" title="To Date"/>
+        <button class="btn btn-outline" onclick="clearDriverFilter()">Clear</button>
+      </div>
+      <div class="report-grid" id="driverReportGrid">
+        <div style="color:var(--text2);padding:40px;text-align:center;grid-column:1/-1">Loading...</div>
+      </div>
+    </div>
+
   </div>
 </div>
 
@@ -321,6 +411,27 @@
         <div class="form-group">
           <label>Total KM (auto)</label>
           <input type="number" id="fTotalKM" placeholder="—" readonly style="opacity:.6" />
+        </div>
+        <div class="form-group">
+          <label>Fuel Type</label>
+          <select id="fFuelType">
+            <option value="">-- None --</option>
+            <option value="Petrol">Petrol</option>
+            <option value="Diesel">Diesel</option>
+            <option value="CNG">CNG</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Fuel Litres</label>
+          <input type="number" id="fFuelLitres" placeholder="0.0" step="0.1" />
+        </div>
+        <div class="form-group">
+          <label>Fuel Amount (₹)</label>
+          <input type="number" id="fFuelAmount" placeholder="0" />
+        </div>
+        <div class="form-group full">
+          <label>Remarks / Notes</label>
+          <input type="text" id="fRemarks" placeholder="e.g. Breakdown, Late, Driver change..." />
         </div>
       </div>
     </div>
@@ -431,32 +542,49 @@ window.addEventListener('DOMContentLoaded', () => {
   if (saved) { currentUser = saved; startApp(saved); }
 });
 
+// ─── VIEW SWITCH ──────────────────────────────────────────
+function switchView(name) {
+  document.querySelectorAll('.view-tab').forEach((t,i) => t.classList.toggle('active', ['logbook','vehicle','driver'][i] === name));
+  document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
+  document.getElementById('view' + name.charAt(0).toUpperCase() + name.slice(1)).classList.add('active');
+  if (name === 'vehicle') loadVehicleReport();
+  if (name === 'driver')  loadDriverReport();
+}
+
 // ─── LOAD ENTRIES ─────────────────────────────────────────
 async function loadEntries() {
   const tbody = document.getElementById('logbookBody');
-  tbody.innerHTML = '<tr class="loading-row"><td colspan="13"><span class="spinner"></span> Loading...</td></tr>';
+  tbody.innerHTML = '<tr class="loading-row"><td colspan="14"><span class="spinner"></span> Loading...</td></tr>';
 
   let q = db.from('logbook').select('*').order('entry_date', { ascending: false }).order('created_at', { ascending: false });
 
-  const dateVal    = document.getElementById('filterDate').value;
+  const fromVal    = document.getElementById('filterFrom').value;
+  const toVal      = document.getElementById('filterTo').value;
   const vehicleVal = document.getElementById('filterVehicle').value.trim();
   const driverVal  = document.getElementById('filterDriver').value.trim();
 
-  if (dateVal)    q = q.eq('entry_date', dateVal);
+  if (fromVal)    q = q.gte('entry_date', fromVal);
+  if (toVal)      q = q.lte('entry_date', toVal);
   if (vehicleVal) q = q.ilike('vehicle_no', `%${vehicleVal}%`);
   if (driverVal)  q = q.ilike('driver_name', `%${driverVal}%`);
 
   const { data, error } = await q;
-  if (error) { toast('Error loading entries', 'error'); tbody.innerHTML = '<tr><td colspan="13" style="text-align:center;padding:30px;color:var(--red)">Error loading data</td></tr>'; return; }
+  if (error) { toast('Error loading entries', 'error'); tbody.innerHTML = '<tr><td colspan="14" style="text-align:center;padding:30px;color:var(--red)">Error loading data</td></tr>'; return; }
 
   allEntries = data || [];
   renderTable(allEntries);
 }
 
+function fuelTag(type) {
+  if (!type) return '—';
+  const cls = type === 'Petrol' ? 'fuel-petrol' : type === 'Diesel' ? 'fuel-diesel' : 'fuel-cng';
+  return `<span class="fuel-tag ${cls}">${type}</span>`;
+}
+
 function renderTable(rows) {
   const tbody = document.getElementById('logbookBody');
   if (!rows.length) {
-    tbody.innerHTML = `<tr><td colspan="13"><div class="empty-state"><div class="ei">📋</div><div>No entries found</div></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="14"><div class="empty-state"><div class="ei">📋</div><div>No entries found</div></div></td></tr>`;
     return;
   }
 
@@ -476,6 +604,7 @@ function renderTable(rows) {
       <td>${r.starting_km ?? '—'}</td>
       <td>${r.closing_km ?? '—'}</td>
       <td class="km-total">${totalKM !== '—' ? totalKM + ' km' : '—'}</td>
+      <td>${fuelTag(r.fuel_type)}${r.fuel_litres ? `<br><small style="color:var(--text2)">${r.fuel_litres}L ₹${r.fuel_amount||0}</small>` : ''}</td>
       <td>
         ${canEdit ? `<div class="action-btns">
           <button class="act-btn edit" onclick="openModal('${r.id}')">Edit</button>
@@ -543,6 +672,10 @@ function openModal(id = null) {
     document.getElementById('fCloseTime').value   = r.closing_time || '';
     document.getElementById('fStartKM').value     = r.starting_km ?? '';
     document.getElementById('fCloseKM').value     = r.closing_km ?? '';
+    document.getElementById('fFuelType').value    = r.fuel_type || '';
+    document.getElementById('fFuelLitres').value  = r.fuel_litres ?? '';
+    document.getElementById('fFuelAmount').value  = r.fuel_amount ?? '';
+    document.getElementById('fRemarks').value     = r.remarks || '';
     calcKM();
   }
 }
@@ -553,10 +686,11 @@ function closeModal() {
 }
 
 function clearForm() {
-  ['fDate','fVehicleNo','fVendorCode','fDriverName','fLocation','fStartTime','fCloseTime','fStartKM','fCloseKM','fTotalKM'].forEach(id => {
+  ['fDate','fVehicleNo','fVendorCode','fDriverName','fLocation','fStartTime','fCloseTime','fStartKM','fCloseKM','fTotalKM','fFuelLitres','fFuelAmount','fRemarks'].forEach(id => {
     document.getElementById(id).value = '';
   });
   document.getElementById('fVehicleType').value = '';
+  document.getElementById('fFuelType').value = '';
 }
 
 function calcKM() {
@@ -584,6 +718,10 @@ async function saveEntry() {
     closing_time:  document.getElementById('fCloseTime').value || null,
     starting_km:   parseFloat(document.getElementById('fStartKM').value) || null,
     closing_km:    parseFloat(document.getElementById('fCloseKM').value) || null,
+    fuel_type:     document.getElementById('fFuelType').value || null,
+    fuel_litres:   parseFloat(document.getElementById('fFuelLitres').value) || null,
+    fuel_amount:   parseFloat(document.getElementById('fFuelAmount').value) || null,
+    remarks:       document.getElementById('fRemarks').value.trim() || null,
   };
 
   const btn = document.getElementById('saveBtn');
@@ -619,10 +757,23 @@ async function deleteEntry(id) {
 
 // ─── FILTERS ──────────────────────────────────────────────
 function clearFilters() {
-  document.getElementById('filterDate').value    = '';
+  document.getElementById('filterFrom').value    = '';
+  document.getElementById('filterTo').value      = '';
   document.getElementById('filterVehicle').value = '';
   document.getElementById('filterDriver').value  = '';
   loadEntries();
+}
+
+function clearVehicleFilter() {
+  document.getElementById('vFilterFrom').value = '';
+  document.getElementById('vFilterTo').value   = '';
+  loadVehicleReport();
+}
+
+function clearDriverFilter() {
+  document.getElementById('dFilterFrom').value = '';
+  document.getElementById('dFilterTo').value   = '';
+  loadDriverReport();
 }
 
 // ─── EXCEL EXPORT ─────────────────────────────────────────
@@ -641,6 +792,10 @@ function exportExcel() {
     'Start KM': r.starting_km ?? '',
     'Close KM': r.closing_km ?? '',
     'Total KM': (r.closing_km != null && r.starting_km != null) ? (r.closing_km - r.starting_km) : '',
+    'Fuel Type': r.fuel_type || '',
+    'Fuel Litres': r.fuel_litres ?? '',
+    'Fuel Amount (₹)': r.fuel_amount ?? '',
+    'Remarks': r.remarks || '',
   }));
 
   const ws = XLSX.utils.json_to_sheet(rows);
@@ -669,6 +824,105 @@ function toast(msg, type = '') {
   setTimeout(() => el.className = 'toast', 3000);
 }
 
+
+// ─── VEHICLE REPORT ───────────────────────────────────────
+async function loadVehicleReport() {
+  const grid = document.getElementById('vehicleReportGrid');
+  grid.innerHTML = '<div style="color:var(--text2);padding:40px;text-align:center;grid-column:1/-1"><span class="spinner"></span> Loading...</div>';
+
+  let q = db.from('logbook').select('*');
+  const from = document.getElementById('vFilterFrom').value;
+  const to   = document.getElementById('vFilterTo').value;
+  if (from) q = q.gte('entry_date', from);
+  if (to)   q = q.lte('entry_date', to);
+
+  const { data, error } = await q;
+  if (error || !data.length) { grid.innerHTML = '<div style="color:var(--text2);padding:40px;text-align:center;grid-column:1/-1">No data found</div>'; return; }
+
+  const map = {};
+  data.forEach(r => {
+    const k = r.vehicle_no || '?';
+    if (!map[k]) map[k] = { trips:0, km:0, fuelL:0, fuelAmt:0, types:new Set(), fuelTypes:{} };
+    map[k].trips++;
+    if (r.closing_km && r.starting_km) map[k].km += (r.closing_km - r.starting_km);
+    if (r.fuel_litres) map[k].fuelL += r.fuel_litres;
+    if (r.fuel_amount) map[k].fuelAmt += r.fuel_amount;
+    if (r.vehicle_type) map[k].types.add(r.vehicle_type);
+    if (r.fuel_type) { map[k].fuelTypes[r.fuel_type] = (map[k].fuelTypes[r.fuel_type]||0) + 1; }
+  });
+
+  const sorted = Object.entries(map).sort((a,b) => b[1].km - a[1].km);
+  grid.innerHTML = sorted.map(([vno, d]) => {
+    const fuelBadges = Object.keys(d.fuelTypes).map(ft => `<span class="fuel-tag fuel-${ft.toLowerCase()}">${ft}</span>`).join(' ');
+    return `<div class="report-card">
+      <div class="rc-head">
+        <div class="rc-name">🚗 ${vno}</div>
+        <div class="rc-badge">${[...d.types].join(', ') || '—'}</div>
+      </div>
+      <div class="rc-stats">
+        <div class="rc-stat"><div class="rs-label">Total Trips</div><div class="rs-val">${d.trips}</div></div>
+        <div class="rc-stat"><div class="rs-label">Total KM</div><div class="rs-val">${fmt(d.km)}</div></div>
+        <div class="rc-stat"><div class="rs-label">Fuel Litres</div><div class="rs-val">${d.fuelL.toFixed(1)}</div></div>
+        <div class="rc-stat"><div class="rs-label">Fuel Cost ₹</div><div class="rs-val">${fmt(d.fuelAmt)}</div></div>
+      </div>
+      ${fuelBadges ? `<div class="rc-fuel">${fuelBadges}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+// ─── DRIVER REPORT ────────────────────────────────────────
+async function loadDriverReport() {
+  const grid = document.getElementById('driverReportGrid');
+  grid.innerHTML = '<div style="color:var(--text2);padding:40px;text-align:center;grid-column:1/-1"><span class="spinner"></span> Loading...</div>';
+
+  let q = db.from('logbook').select('*');
+  const from = document.getElementById('dFilterFrom').value;
+  const to   = document.getElementById('dFilterTo').value;
+  if (from) q = q.gte('entry_date', from);
+  if (to)   q = q.lte('entry_date', to);
+
+  const { data, error } = await q;
+  if (error || !data.length) { grid.innerHTML = '<div style="color:var(--text2);padding:40px;text-align:center;grid-column:1/-1">No data found</div>'; return; }
+
+  const map = {};
+  data.forEach(r => {
+    const k = r.driver_name || '?';
+    if (!map[k]) map[k] = { trips:0, km:0, vehicles:new Set(), dates:new Set() };
+    map[k].trips++;
+    if (r.closing_km && r.starting_km) map[k].km += (r.closing_km - r.starting_km);
+    if (r.vehicle_no) map[k].vehicles.add(r.vehicle_no);
+    if (r.entry_date) map[k].dates.add(r.entry_date);
+  });
+
+  const sorted = Object.entries(map).sort((a,b) => b[1].trips - a[1].trips);
+  grid.innerHTML = sorted.map(([name, d]) => {
+    return `<div class="report-card">
+      <div class="rc-head">
+        <div class="rc-name">👤 ${name}</div>
+        <div class="rc-badge">${d.dates.size} days</div>
+      </div>
+      <div class="rc-stats">
+        <div class="rc-stat"><div class="rs-label">Total Trips</div><div class="rs-val">${d.trips}</div></div>
+        <div class="rc-stat"><div class="rs-label">Total KM</div><div class="rs-val">${fmt(d.km)}</div></div>
+        <div class="rc-stat"><div class="rs-label">Vehicles Used</div><div class="rs-val">${d.vehicles.size}</div></div>
+        <div class="rc-stat"><div class="rs-label">Avg KM/Trip</div><div class="rs-val">${d.trips ? Math.round(d.km/d.trips) : 0}</div></div>
+      </div>
+      ${d.vehicles.size ? `<div class="rc-fuel">${[...d.vehicles].slice(0,4).map(v=>`<span>${v}</span>`).join('')}${d.vehicles.size>4?`<span>+${d.vehicles.size-4} more</span>`:''}</div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+// ─── PRINT / PDF ──────────────────────────────────────────
+function printLogbook() {
+  const from = document.getElementById('filterFrom').value;
+  const to   = document.getElementById('filterTo').value;
+  let range = 'All Entries';
+  if (from && to) range = `${formatDate(from)} to ${formatDate(to)}`;
+  else if (from)  range = `From ${formatDate(from)}`;
+  else if (to)    range = `Up to ${formatDate(to)}`;
+  document.getElementById('printRange').textContent = `${range} — Generated: ${new Date().toLocaleDateString('en-IN')}`;
+  window.print();
+}
 // Close modal on outside click
 document.getElementById('modalOverlay').addEventListener('click', function(e) {
   if (e.target === this) closeModal();
