@@ -275,6 +275,11 @@
         <div class="s-val" id="statVehicles">0</div>
         <div class="s-sub">unique this month</div>
       </div>
+      <div class="stat-card">
+        <div class="s-label">Fuel Cost (Month)</div>
+        <div class="s-val" id="statFuel">₹0</div>
+        <div class="s-sub">total fuel spend</div>
+      </div>
     </div>
 
     <!-- View Tabs -->
@@ -288,10 +293,12 @@
     <div id="viewLogbook" class="view-section active">
       <!-- Toolbar -->
       <div class="toolbar">
-        <input type="date" id="filterFrom" onchange="loadEntries()" title="From Date" placeholder="From"/>
-        <input type="date" id="filterTo" onchange="loadEntries()" title="To Date" placeholder="To"/>
-        <input type="text" id="filterVehicle" placeholder="🔍 Vehicle No." oninput="debouncedLoad()" style="width:140px"/>
-        <input type="text" id="filterDriver" placeholder="🔍 Driver Name" oninput="debouncedLoad()" style="width:140px"/>
+        <button class="btn btn-outline" onclick="setMonth(0)" title="This Month">This Month</button>
+        <button class="btn btn-outline" onclick="setMonth(-1)" title="Last Month">Last Month</button>
+        <input type="date" id="filterFrom" onchange="loadEntries()" title="From Date"/>
+        <input type="date" id="filterTo" onchange="loadEntries()" title="To Date"/>
+        <input type="text" id="filterVehicle" placeholder="🔍 Vehicle No." oninput="debouncedLoad()" style="width:130px"/>
+        <input type="text" id="filterDriver" placeholder="🔍 Driver Name" oninput="debouncedLoad()" style="width:130px"/>
         <button class="btn btn-outline" onclick="clearFilters()">Clear</button>
         <div class="spacer"></div>
         <button class="btn btn-outline" onclick="printLogbook()" title="Print / PDF">🖨️ Print</button>
@@ -321,11 +328,12 @@
               <th>C. KM</th>
               <th>Total KM</th>
               <th>Fuel</th>
+              <th>Remarks</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody id="logbookBody">
-            <tr class="loading-row"><td colspan="14"><span class="spinner"></span> Loading...</td></tr>
+            <tr class="loading-row"><td colspan="15"><span class="spinner"></span> Loading...</td></tr>
           </tbody>
         </table>
       </div>
@@ -401,7 +409,8 @@
         </div>
         <div class="form-group full">
           <label>Location / Route</label>
-          <input type="text" id="fLocation" placeholder="e.g. Delhi to Agra" />
+          <input type="text" id="fLocation" placeholder="e.g. Delhi to Agra" list="locationList"/>
+          <datalist id="locationList"></datalist>
         </div>
         <div class="form-group">
           <label>Starting Time</label>
@@ -629,7 +638,7 @@ function switchView(name) {
 // ─── LOAD ENTRIES ─────────────────────────────────────────
 async function loadEntries() {
   const tbody = document.getElementById('logbookBody');
-  tbody.innerHTML = '<tr class="loading-row"><td colspan="14"><span class="spinner"></span> Loading...</td></tr>';
+  tbody.innerHTML = '<tr class="loading-row"><td colspan="15"><span class="spinner"></span> Loading...</td></tr>';
 
   let q = db.from('logbook').select('*').order('entry_date', { ascending: false }).order('created_at', { ascending: false }).limit(500);
 
@@ -644,7 +653,7 @@ async function loadEntries() {
   if (driverVal)  q = q.ilike('driver_name', `%${driverVal}%`);
 
   const { data, error } = await q;
-  if (error) { toast('Error loading entries', 'error'); tbody.innerHTML = '<tr><td colspan="14" style="text-align:center;padding:30px;color:var(--red)">Error loading data</td></tr>'; return; }
+  if (error) { toast('Error loading entries', 'error'); tbody.innerHTML = '<tr><td colspan="15" style="text-align:center;padding:30px;color:var(--red)">Error loading data</td></tr>'; return; }
 
   allEntries = data || [];
   renderTable(allEntries);
@@ -659,7 +668,7 @@ function fuelTag(type) {
 function renderTable(rows) {
   const tbody = document.getElementById('logbookBody');
   if (!rows.length) {
-    tbody.innerHTML = `<tr><td colspan="14"><div class="empty-state"><div class="ei">📋</div><div>No entries found</div></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="15"><div class="empty-state"><div class="ei">📋</div><div>No entries found</div></div></td></tr>`;
     return;
   }
 
@@ -680,6 +689,7 @@ function renderTable(rows) {
       <td>${r.closing_km ?? '—'}</td>
       <td class="km-total">${totalKM !== '—' ? totalKM + ' km' : '—'}</td>
       <td>${fuelTag(r.fuel_type)}${r.fuel_litres ? `<br><small style="color:var(--text2)">${r.fuel_litres}${r.fuel_type==='CNG'?'kg':'L'} ₹${r.fuel_amount||0}</small>` : ''}</td>
+      <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.remarks||''}">${r.remarks ? `<span style="color:var(--text2);font-size:0.8rem">${r.remarks}</span>` : '—'}</td>
       <td>
         ${canEdit ? `<div class="action-btns">
           <button class="act-btn edit" onclick="openModal('${r.id}')">Edit</button>
@@ -697,7 +707,7 @@ async function updateStats() {
 
   const [todayRes, monthRes] = await Promise.all([
     db.from('logbook').select('id', { count: 'exact' }).eq('entry_date', today),
-    db.from('logbook').select('starting_km, closing_km, vehicle_no').gte('entry_date', firstOfMonth)
+    db.from('logbook').select('starting_km, closing_km, vehicle_no, fuel_amount').gte('entry_date', firstOfMonth)
   ]);
 
   const todayCount = todayRes.count || 0;
@@ -706,23 +716,27 @@ async function updateStats() {
     if (r.closing_km != null && r.starting_km != null) s += (r.closing_km - r.starting_km);
     return s;
   }, 0);
+  const totalFuel  = monthData.reduce((s, r) => s + (r.fuel_amount || 0), 0);
   const uniqueVehicles = new Set(monthData.map(r => r.vehicle_no).filter(Boolean)).size;
 
   document.getElementById('statToday').textContent    = todayCount;
   document.getElementById('statMonth').textContent    = monthData.length;
   document.getElementById('statKM').textContent       = fmt(totalKM);
   document.getElementById('statVehicles').textContent = uniqueVehicles;
+  document.getElementById('statFuel').textContent     = '₹' + fmt(totalFuel);
 }
 
 // ─── AUTOCOMPLETE ─────────────────────────────────────────
 async function loadAutocomplete() {
-  const { data } = await db.from('logbook').select('vehicle_no, driver_name');
+  const { data } = await db.from('logbook').select('vehicle_no, driver_name, location');
   if (!data) return;
-  const vehicles = [...new Set(data.map(r => r.vehicle_no).filter(Boolean))];
-  const drivers  = [...new Set(data.map(r => r.driver_name).filter(Boolean))];
+  const vehicles  = [...new Set(data.map(r => r.vehicle_no).filter(Boolean))];
+  const drivers   = [...new Set(data.map(r => r.driver_name).filter(Boolean))];
+  const locations = [...new Set(data.map(r => r.location).filter(Boolean))];
 
-  document.getElementById('vehicleList').innerHTML = vehicles.map(v => `<option value="${v}">`).join('');
-  document.getElementById('driverList').innerHTML  = drivers.map(d => `<option value="${d}">`).join('');
+  document.getElementById('vehicleList').innerHTML   = vehicles.map(v => `<option value="${v}">`).join('');
+  document.getElementById('driverList').innerHTML    = drivers.map(d => `<option value="${d}">`).join('');
+  document.getElementById('locationList').innerHTML  = locations.map(l => `<option value="${l}">`).join('');
 }
 
 // ─── MODAL ────────────────────────────────────────────────
@@ -752,6 +766,7 @@ function openModal(id = null) {
     document.getElementById('fFuelAmount').value  = r.fuel_amount ?? '';
     document.getElementById('fRemarks').value     = r.remarks || '';
     calcKM();
+    updateFuelUnit();
   }
 }
 
@@ -781,6 +796,14 @@ async function saveEntry() {
   const driver = document.getElementById('fDriverName').value.trim();
 
   if (!date || !vehicle || !driver) { toast('Date, Vehicle No. & Driver are required', 'error'); return; }
+
+  const sKM = parseFloat(document.getElementById('fStartKM').value);
+  const cKM = parseFloat(document.getElementById('fCloseKM').value);
+  if (!isNaN(sKM) && !isNaN(cKM) && cKM < sKM) {
+    toast('Closing KM cannot be less than Starting KM', 'error');
+    document.getElementById('fCloseKM').focus();
+    return;
+  }
 
   const payload = {
     entry_date:    date,
@@ -831,6 +854,17 @@ async function deleteEntry(id) {
 }
 
 // ─── FILTERS ──────────────────────────────────────────────
+function setMonth(offset) {
+  const d = new Date();
+  d.setMonth(d.getMonth() + offset);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const lastDay = new Date(y, d.getMonth() + 1, 0).getDate();
+  document.getElementById('filterFrom').value = `${y}-${m}-01`;
+  document.getElementById('filterTo').value   = `${y}-${m}-${lastDay}`;
+  loadEntries();
+}
+
 function clearFilters() {
   document.getElementById('filterFrom').value    = '';
   document.getElementById('filterTo').value      = '';
@@ -940,7 +974,7 @@ async function loadVehicleReport() {
       <div class="rc-stats">
         <div class="rc-stat"><div class="rs-label">Total Trips</div><div class="rs-val">${d.trips}</div></div>
         <div class="rc-stat"><div class="rs-label">Total KM</div><div class="rs-val">${fmt(d.km)}</div></div>
-        <div class="rc-stat"><div class="rs-label">Fuel Litres</div><div class="rs-val">${d.fuelL.toFixed(1)}</div></div>
+        <div class="rc-stat"><div class="rs-label">Fuel Qty</div><div class="rs-val">${d.fuelL.toFixed(1)}</div></div>
         <div class="rc-stat"><div class="rs-label">Fuel Cost ₹</div><div class="rs-val">${fmt(d.fuelAmt)}</div></div>
       </div>
       ${fuelBadges ? `<div class="rc-fuel">${fuelBadges}</div>` : ''}
