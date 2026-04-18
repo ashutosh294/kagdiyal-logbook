@@ -21,9 +21,12 @@
   <meta name="description" content="Kagdiyal Holidays – Vehicle Log Book"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Kagdiyal Holidays – Logbook</title>
-<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com" crossorigin/>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=DM+Sans:wght@400;500&display=swap" onload="this.rel='stylesheet'"/>
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=DM+Sans:wght@400;500&display=swap"/></noscript>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<!-- SheetJS loaded on demand -->
 <style>
   :root {
     --bg: #0f0f13;
@@ -205,6 +208,14 @@
     .toolbar { flex-direction: column; align-items: stretch; }
   }
 </style>
+<link rel="dns-prefetch" href="https://ckcjzvfnkckuesqqmuks.supabase.co"/>
+<link rel="preconnect" href="https://ckcjzvfnkckuesqqmuks.supabase.co" crossorigin/>
+<style>
+  /* System font fallback while custom fonts load - prevents FOIT */
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+  body.fonts-loaded { font-family: 'DM Sans', sans-serif; }
+  .logo, .modal-header h2, .s-val, .km-total, .rc-name { font-family: 'Rajdhani', 'Arial Black', sans-serif; }
+</style>
 </head>
 <body>
 
@@ -216,8 +227,8 @@
     <label>Username</label>
     <input type="text" id="loginUser" placeholder="Enter username" />
     <label>Password</label>
-    <input type="password" id="loginPass" placeholder="Enter password" onkeydown="if(event.key==='Enter')doLogin()" />
-    <button class="login-btn" onclick="doLogin()">LOGIN</button>
+    <input type="password" id="loginPass" placeholder="Enter password"  />
+    <button class="login-btn" id="loginBtn" onclick="doLogin()">LOGIN</button>
     <div class="login-err" id="loginErr"></div>
   </div>
 </div>
@@ -279,8 +290,8 @@
       <div class="toolbar">
         <input type="date" id="filterFrom" onchange="loadEntries()" title="From Date" placeholder="From"/>
         <input type="date" id="filterTo" onchange="loadEntries()" title="To Date" placeholder="To"/>
-        <input type="text" id="filterVehicle" placeholder="🔍 Vehicle No." oninput="loadEntries()" style="width:140px"/>
-        <input type="text" id="filterDriver" placeholder="🔍 Driver Name" oninput="loadEntries()" style="width:140px"/>
+        <input type="text" id="filterVehicle" placeholder="🔍 Vehicle No." oninput="debouncedLoad()" style="width:140px"/>
+        <input type="text" id="filterDriver" placeholder="🔍 Driver Name" oninput="debouncedLoad()" style="width:140px"/>
         <button class="btn btn-outline" onclick="clearFilters()">Clear</button>
         <div class="spacer"></div>
         <button class="btn btn-outline" onclick="printLogbook()" title="Print / PDF">🖨️ Print</button>
@@ -414,7 +425,7 @@
         </div>
         <div class="form-group">
           <label>Fuel Type</label>
-          <select id="fFuelType">
+          <select id="fFuelType" onchange="updateFuelUnit()">
             <option value="">-- None --</option>
             <option value="Petrol">Petrol</option>
             <option value="Diesel">Diesel</option>
@@ -422,8 +433,8 @@
           </select>
         </div>
         <div class="form-group">
-          <label>Fuel Litres</label>
-          <input type="number" id="fFuelLitres" placeholder="0.0" step="0.1" />
+          <label id="fuelUnitLabel">Fuel Litres</label>
+          <input type="number" id="fFuelLitres" placeholder="0.0" step="0.1" oninput="updateFuelUnit()" />
         </div>
         <div class="form-group">
           <label>Fuel Amount (₹)</label>
@@ -451,12 +462,19 @@ const SUPABASE_URL  = 'https://ckcjzvfnkckuesqqmuks.supabase.co';
 const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNrY2p6dmZua2NrdWVzcXFtdWtzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwMzQ5MjQsImV4cCI6MjA5MDYxMDkyNH0.Hd0al1x3a7-refUXc8RVoBmyEBq6sQ9ovHbYJKVlWAM';
 
 // ─── INIT ─────────────────────────────────────────────────
-const { createClient } = supabase;
-const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+let db, currentUser = null, editingId = null, allEntries = [];
 
-let currentUser = null;
-let editingId   = null;
-let allEntries  = [];
+function initDB() {
+  try {
+    const { createClient } = supabase;
+    db = createClient(SUPABASE_URL, SUPABASE_KEY);
+    return true;
+  } catch(e) {
+    console.error('Supabase init failed:', e);
+    document.getElementById('loginErr').textContent = 'App failed to load. Refresh the page.';
+    return false;
+  }
+}
 
 // ─── AUTH ─────────────────────────────────────────────────
 const SESSION_KEY = 'kh_logbook_auth';
@@ -484,31 +502,47 @@ async function doLogin() {
   const p = document.getElementById('loginPass').value.trim();
   if (!u || !p) { showErr('Enter username and password'); return; }
 
-  const hashed = await hashPass(p);
+  const btn = document.getElementById('loginBtn');
+  btn.disabled = true;
+  btn.textContent = 'Logging in...';
+  showErr('');
 
-  // Try hashed password first, fallback to plain (for existing users)
-  let { data, error } = await db
-    .from('app_users')
-    .select('*')
-    .eq('username', u)
-    .eq('password_hash', hashed)
-    .single();
+  try {
+    const hashed = await hashPass(p);
 
-  // Fallback: plain text (purane users ke liye)
-  if (error || !data) {
-    ({ data, error } = await db
+    // Try hashed password first
+    let { data, error } = await db
       .from('app_users')
       .select('*')
       .eq('username', u)
-      .eq('password', p)
-      .single());
+      .eq('password_hash', hashed)
+      .single();
+
+    // Fallback: plain text (purane users ke liye)
+    if (error || !data) {
+      ({ data, error } = await db
+        .from('app_users')
+        .select('*')
+        .eq('username', u)
+        .eq('password', p)
+        .single());
+    }
+
+    if (error || !data) {
+      showErr('Invalid username or password');
+      return;
+    }
+
+    currentUser = data;
+    saveSession(data);
+    startApp(data);
+  } catch(e) {
+    showErr('Connection error. Check internet and try again.');
+    console.error('Login error:', e);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'LOGIN';
   }
-
-  if (error || !data) { showErr('Invalid credentials'); return; }
-
-  currentUser = data;
-  saveSession(data);
-  startApp(data);
 }
 
 function startApp(data) {
@@ -536,11 +570,52 @@ function doLogout() {
 
 function showErr(msg) { document.getElementById('loginErr').textContent = msg; }
 
-// Auto-login if session valid
-window.addEventListener('DOMContentLoaded', () => {
+// Font load observer — removes FOIT
+if ('fonts' in document) {
+  document.fonts.ready.then(() => document.body.classList.add('fonts-loaded'));
+} else { document.body.classList.add('fonts-loaded'); }
+
+// Debounce helper — prevents DB query on every keystroke
+let _debTimer;
+function debouncedLoad() { clearTimeout(_debTimer); _debTimer = setTimeout(loadEntries, 320); }
+
+// Lazy SheetJS loader
+let _xlsxReady = false;
+function ensureXLSX(cb) {
+  if (_xlsxReady) { cb(); return; }
+  const s = document.createElement('script');
+  s.src = 'https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js';
+  s.onload = () => { _xlsxReady = true; cb(); };
+  document.head.appendChild(s);
+}
+
+// CNG = kg, others = L
+function updateFuelUnit() {
+  const type = document.getElementById('fFuelType').value;
+  const label = document.getElementById('fuelUnitLabel');
+  const input = document.getElementById('fFuelLitres');
+  if (type === 'CNG') {
+    label.textContent = 'Fuel (kg)';
+    input.placeholder = '0.0 kg';
+  } else {
+    label.textContent = 'Fuel (Litres)';
+    input.placeholder = '0.0 L';
+  }
+}
+
+// Auto-login if session valid — safe init
+function _initApp() {
+  if (!initDB()) return;  // abort if supabase failed
+  // Attach keydown to password field safely (no inline onkeydown needed)
+  const passEl = document.getElementById('loginPass');
+  if (passEl) passEl.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+  // Auto-login from session
   const saved = checkSession();
   if (saved) { currentUser = saved; startApp(saved); }
-});
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', _initApp);
+} else { _initApp(); }
 
 // ─── VIEW SWITCH ──────────────────────────────────────────
 function switchView(name) {
@@ -556,7 +631,7 @@ async function loadEntries() {
   const tbody = document.getElementById('logbookBody');
   tbody.innerHTML = '<tr class="loading-row"><td colspan="14"><span class="spinner"></span> Loading...</td></tr>';
 
-  let q = db.from('logbook').select('*').order('entry_date', { ascending: false }).order('created_at', { ascending: false });
+  let q = db.from('logbook').select('*').order('entry_date', { ascending: false }).order('created_at', { ascending: false }).limit(500);
 
   const fromVal    = document.getElementById('filterFrom').value;
   const toVal      = document.getElementById('filterTo').value;
@@ -604,7 +679,7 @@ function renderTable(rows) {
       <td>${r.starting_km ?? '—'}</td>
       <td>${r.closing_km ?? '—'}</td>
       <td class="km-total">${totalKM !== '—' ? totalKM + ' km' : '—'}</td>
-      <td>${fuelTag(r.fuel_type)}${r.fuel_litres ? `<br><small style="color:var(--text2)">${r.fuel_litres}L ₹${r.fuel_amount||0}</small>` : ''}</td>
+      <td>${fuelTag(r.fuel_type)}${r.fuel_litres ? `<br><small style="color:var(--text2)">${r.fuel_litres}${r.fuel_type==='CNG'?'kg':'L'} ₹${r.fuel_amount||0}</small>` : ''}</td>
       <td>
         ${canEdit ? `<div class="action-btns">
           <button class="act-btn edit" onclick="openModal('${r.id}')">Edit</button>
@@ -778,6 +853,9 @@ function clearDriverFilter() {
 
 // ─── EXCEL EXPORT ─────────────────────────────────────────
 function exportExcel() {
+  ensureXLSX(_doExport);
+}
+function _doExport() {
   if (!allEntries.length) { toast('No data to export', 'error'); return; }
   const rows = allEntries.map((r, i) => ({
     '#': i+1,
@@ -793,7 +871,7 @@ function exportExcel() {
     'Close KM': r.closing_km ?? '',
     'Total KM': (r.closing_km != null && r.starting_km != null) ? (r.closing_km - r.starting_km) : '',
     'Fuel Type': r.fuel_type || '',
-    'Fuel Litres': r.fuel_litres ?? '',
+    'Fuel Qty': r.fuel_litres ? `${r.fuel_litres}${r.fuel_type==='CNG'?'kg':'L'}` : '',
     'Fuel Amount (₹)': r.fuel_amount ?? '',
     'Remarks': r.remarks || '',
   }));
@@ -960,7 +1038,7 @@ if ('serviceWorker' in navigator) {
   const swCode = `
 const CACHE = 'kh-logbook-v1';
 const ASSETS = [
-  'https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=DM+Sans:wght@300;400;500&display=swap',
+  'https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=DM+Sans:wght@400;500&display=swap',
   'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
   'https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js'
 ];
