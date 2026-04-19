@@ -143,6 +143,21 @@
   .form-group input[type="date"], .form-group input[type="time"] { color-scheme: dark; }
   .modal-footer { padding: 16px 24px 20px; border-top: 1px solid var(--border); display: flex; gap: 10px; justify-content: flex-end; }
 
+  /* ── CONFIRM MODAL ── */
+  .confirm-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.75); z-index:300; align-items:center; justify-content:center; padding:16px; }
+  .confirm-overlay.open { display:flex; }
+  .confirm-box { background:var(--surface); border:1px solid var(--border); border-radius:14px; width:100%; max-width:360px; padding:24px; text-align:center; }
+  .confirm-box .ci { font-size:2rem; margin-bottom:10px; }
+  .confirm-box .ct { font-size:1rem; font-weight:700; color:var(--text); margin-bottom:6px; font-family:'Rajdhani',sans-serif; }
+  .confirm-box .cd { font-size:0.82rem; color:var(--text2); margin-bottom:20px; line-height:1.5; }
+  .confirm-box .cbtns { display:flex; gap:10px; }
+  .confirm-box .cbtns button { flex:1; padding:10px; border-radius:8px; font-size:0.88rem; font-weight:600; cursor:pointer; font-family:'DM Sans',sans-serif; border:none; }
+  .confirm-box .c-cancel { background:var(--surface2); color:var(--text2); border:1px solid var(--border) !important; }
+  .confirm-box .c-delete { background:var(--red); color:#fff; }
+
+  /* ── SWIPE HANDLE ── */
+  .modal-handle { width:36px; height:4px; background:var(--border); border-radius:2px; margin:10px auto 0; }
+
   /* ── TOAST ── */
   .toast { position: fixed; bottom: 24px; right: 24px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 12px 20px; border-radius: 10px; font-size: 0.85rem; z-index: 999; opacity: 0; transform: translateY(10px); transition: all .3s; pointer-events: none; }
   .toast.show { opacity: 1; transform: translateY(0); }
@@ -339,6 +354,7 @@
       <!-- Toolbar -->
       <div class="toolbar">
         <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;width:100%">
+          <button class="btn btn-outline" onclick="setToday()">Today</button>
           <button class="btn btn-outline" onclick="setMonth(0)">This Month</button>
           <button class="btn btn-outline" onclick="setMonth(-1)">Last Month</button>
           <input type="date" id="filterFrom" onchange="loadEntries()" title="From"/>
@@ -416,6 +432,7 @@
 <!-- MODAL -->
 <div class="modal-overlay" id="modalOverlay">
   <div class="modal">
+    <div class="modal-handle"></div>
     <div class="modal-header">
       <h2 id="modalTitle">New Entry</h2>
       <button class="modal-close" onclick="closeModal()">✕</button>
@@ -505,6 +522,19 @@
     <div class="modal-footer">
       <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
       <button class="btn btn-primary" id="saveBtn" onclick="saveEntry()">Save Entry</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM MODAL -->
+<div class="confirm-overlay" id="confirmOverlay">
+  <div class="confirm-box">
+    <div class="ci">🗑️</div>
+    <div class="ct" id="confirmTitle">Delete Entry?</div>
+    <div class="cd" id="confirmMsg">Ye entry permanently delete ho jaayegi.</div>
+    <div class="cbtns">
+      <button class="c-cancel" onclick="closeConfirm()">Cancel</button>
+      <button class="c-delete" id="confirmOkBtn">Delete</button>
     </div>
   </div>
 </div>
@@ -715,7 +745,17 @@ function fuelTag(type) {
 function renderTable(rows) {
   const tbody = document.getElementById('logbookBody');
   if (!rows.length) {
-    tbody.innerHTML = `<tr><td colspan="15"><div class="empty-state"><div class="ei">📋</div><div>No entries found</div></div></td></tr>`;
+    const isFiltered = document.getElementById('filterFrom').value ||
+                       document.getElementById('filterTo').value ||
+                       document.getElementById('filterVehicle').value ||
+                       document.getElementById('filterDriver').value;
+    tbody.innerHTML = `<tr><td colspan="15"><div class="empty-state">
+      <div class="ei">${isFiltered ? '🔍' : '📋'}</div>
+      <div style="font-size:0.95rem;font-weight:600;margin-bottom:6px">${isFiltered ? 'No entries match your filters' : 'No entries yet'}</div>
+      <div style="font-size:0.82rem;color:var(--text2);margin-bottom:16px">${isFiltered ? 'Try clearing filters or changing date range' : 'Add your first logbook entry to get started'}</div>
+      ${!isFiltered && currentUser?.role !== 'Staff' ? `<button class="btn btn-primary" onclick="openModal()" style="margin:0 auto">+ Add First Entry</button>` : ''}
+      ${isFiltered ? `<button class="btn btn-outline" onclick="clearFilters()" style="margin:0 auto">Clear Filters</button>` : ''}
+    </div></td></tr>`;
     return;
   }
 
@@ -775,7 +815,7 @@ async function updateStats() {
 
 // ─── AUTOCOMPLETE ─────────────────────────────────────────
 async function loadAutocomplete() {
-  const { data } = await db.from('logbook').select('vehicle_no, driver_name, location');
+  const { data } = await db.from('logbook').select('vehicle_no, driver_name, location').limit(300);
   if (!data) return;
   const vehicles  = [...new Set(data.map(r => r.vehicle_no).filter(Boolean))];
   const drivers   = [...new Set(data.map(r => r.driver_name).filter(Boolean))];
@@ -885,22 +925,56 @@ async function saveEntry() {
 
   toast(editingId ? 'Entry updated!' : 'Entry added!', 'success');
   closeModal();
-  loadEntries();
-  updateStats();
-  loadAutocomplete();
+  await Promise.all([loadEntries(), updateStats(), loadAutocomplete()]);
 }
 
 // ─── DELETE ───────────────────────────────────────────────
-async function deleteEntry(id) {
-  if (!confirm('Delete this entry?')) return;
+let _pendingDeleteId = null;
+
+function deleteEntry(id) {
+  const r = allEntries.find(e => e.id === id);
+  if (!r) return;
+  _pendingDeleteId = id;
+  document.getElementById('confirmTitle').textContent = 'Delete Entry?';
+  document.getElementById('confirmMsg').textContent =
+    `${r.vehicle_no || 'Vehicle'} — ${r.driver_name || 'Driver'} — ${formatDate(r.entry_date)}`;
+  document.getElementById('confirmOverlay').classList.add('open');
+}
+
+function closeConfirm() {
+  document.getElementById('confirmOverlay').classList.remove('open');
+  _pendingDeleteId = null;
+}
+
+async function doDelete() {
+  if (!_pendingDeleteId) return;
+  const id = _pendingDeleteId;
+  closeConfirm();
   const { error } = await db.from('logbook').delete().eq('id', id);
   if (error) { toast('Delete failed', 'error'); return; }
   toast('Entry deleted', 'success');
-  loadEntries();
+  // Remove from local cache — no need for full reload
+  allEntries = allEntries.filter(e => e.id !== id);
+  renderTable(allEntries);
   updateStats();
 }
 
+// Wire up confirm button and overlay click-outside
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('confirmOkBtn').onclick = doDelete;
+  document.getElementById('confirmOverlay').addEventListener('click', function(e) {
+    if (e.target === this) closeConfirm();
+  });
+});
+
 // ─── FILTERS ──────────────────────────────────────────────
+function setToday() {
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('filterFrom').value = today;
+  document.getElementById('filterTo').value   = today;
+  loadEntries();
+}
+
 function setMonth(offset) {
   const d = new Date();
   d.setMonth(d.getMonth() + offset);
@@ -957,7 +1031,23 @@ function _doExport() {
     'Remarks': r.remarks || '',
   }));
 
+  // Totals row
+  const totKM   = allEntries.reduce((s,r) => s + ((r.closing_km && r.starting_km) ? r.closing_km - r.starting_km : 0), 0);
+  const totFuel = allEntries.reduce((s,r) => s + (r.fuel_amount || 0), 0);
+  rows.push({
+    '#': '', 'Date': 'TOTAL', 'Vehicle No': '', 'Vehicle Type': '', 'Vendor Code': '',
+    'Driver Name': '', 'Location': '', 'Start Time': '', 'Close Time': '',
+    'Start KM': '', 'Close KM': '', 'Total KM': Math.round(totKM),
+    'Fuel Type': '', 'Fuel Qty': '', 'Fuel Amount (₹)': Math.round(totFuel), 'Remarks': ''
+  });
+
   const ws = XLSX.utils.json_to_sheet(rows);
+  // Bold the totals row
+  const totalRowIdx = rows.length; // 1-indexed in xlsx
+  ['L','P'].forEach(col => {
+    const cell = ws[`${col}${totalRowIdx + 1}`];
+    if (cell) cell.s = { font: { bold: true } };
+  });
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Logbook');
   XLSX.writeFile(wb, `Kagdiyal_Logbook_${new Date().toISOString().slice(0,10)}.xlsx`);
@@ -1086,6 +1176,41 @@ function printLogbook() {
 document.getElementById('modalOverlay').addEventListener('click', function(e) {
   if (e.target === this) closeModal();
 });
+
+// Swipe down to close modal on mobile
+(function() {
+  const overlay = document.getElementById('modalOverlay');
+  const modal   = overlay.querySelector('.modal');
+  let startY = 0, startScroll = 0;
+
+  modal.addEventListener('touchstart', e => {
+    startY      = e.touches[0].clientY;
+    startScroll = modal.scrollTop;
+  }, { passive: true });
+
+  modal.addEventListener('touchmove', e => {
+    const dy = e.touches[0].clientY - startY;
+    if (dy > 0 && startScroll === 0) {
+      modal.style.transform = `translateY(${Math.min(dy, 180)}px)`;
+      modal.style.transition = 'none';
+    }
+  }, { passive: true });
+
+  modal.addEventListener('touchend', e => {
+    const dy = e.changedTouches[0].clientY - startY;
+    modal.style.transition = 'transform 0.25s ease';
+    if (dy > 80 && startScroll === 0) {
+      modal.style.transform = 'translateY(100%)';
+      setTimeout(() => {
+        closeModal();
+        modal.style.transform = '';
+        modal.style.transition = '';
+      }, 250);
+    } else {
+      modal.style.transform = '';
+    }
+  }, { passive: true });
+})();
 </script>
 
 <!-- PWA Install Banner -->
