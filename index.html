@@ -19,7 +19,7 @@
   <meta name="apple-mobile-web-app-title" content="KH Logbook"/>
   <meta name="application-name" content="KH Logbook"/>
   <meta name="description" content="Kagdiyal Holidays – Vehicle Log Book"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
 <title>Kagdiyal Holidays – Logbook</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
@@ -41,29 +41,31 @@
     --green: #4caf7d;
     --radius: 10px;
   }
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
   body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; }
 
   /* ── TOP NAV ── */
   .topbar {
     background: var(--surface);
     border-bottom: 1px solid var(--border);
-    padding: 0 20px;
+    padding: 0 16px;
     display: flex;
     align-items: center;
     justify-content: space-between;
     height: 56px;
     position: sticky; top: 0; z-index: 100;
+    gap: 8px;
+    min-width: 0;
   }
-  .topbar-brand { display: flex; align-items: center; gap: 10px; }
-  .topbar-brand .logo { font-family: 'Rajdhani', sans-serif; font-size: 1.3rem; font-weight: 700; color: var(--accent); letter-spacing: 1px; }
-  .topbar-brand .sub { font-size: 0.72rem; color: var(--text2); text-transform: uppercase; letter-spacing: 2px; }
-  .topbar-nav { display: flex; gap: 8px; }
-  .nav-btn { background: none; border: 1px solid var(--border); color: var(--text2); padding: 6px 14px; border-radius: 6px; font-size: 0.82rem; cursor: pointer; transition: all .2s; font-family: 'DM Sans', sans-serif; }
+  .topbar-brand { display: flex; align-items: center; gap: 8px; min-width: 0; flex-shrink: 1; overflow: hidden; }
+  .topbar-brand .logo { font-family: 'Rajdhani', sans-serif; font-size: 1.15rem; font-weight: 700; color: var(--accent); letter-spacing: 0.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .topbar-brand .sub { font-size: 0.68rem; color: var(--text2); text-transform: uppercase; letter-spacing: 1.5px; white-space: nowrap; }
+  .topbar-nav { display: flex; gap: 6px; flex-shrink: 0; }
+  .nav-btn { background: none; border: 1px solid var(--border); color: var(--text2); padding: 6px 12px; border-radius: 6px; font-size: 0.8rem; cursor: pointer; transition: all .2s; font-family: 'DM Sans', sans-serif; white-space: nowrap; }
   .nav-btn:hover, .nav-btn.active { background: var(--accent); border-color: var(--accent); color: #000; font-weight: 600; }
-  .topbar-right { display: flex; align-items: center; gap: 10px; }
-  .user-chip { background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 4px 12px; font-size: 0.78rem; color: var(--text2); }
-  .logout-btn { background: none; border: 1px solid var(--red); color: var(--red); padding: 5px 12px; border-radius: 6px; font-size: 0.78rem; cursor: pointer; transition: all .2s; font-family: 'DM Sans', sans-serif; }
+  .topbar-right { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+  .user-chip { background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 4px 10px; font-size: 0.75rem; color: var(--text2); white-space: nowrap; max-width: 120px; overflow: hidden; text-overflow: ellipsis; }
+  .logout-btn { background: none; border: 1px solid var(--red); color: var(--red); padding: 5px 10px; border-radius: 6px; font-size: 0.78rem; cursor: pointer; transition: all .2s; font-family: 'DM Sans', sans-serif; white-space: nowrap; flex-shrink: 0; }
   .logout-btn:hover { background: var(--red); color: #fff; }
 
   /* ── LOGIN ── */
@@ -71,11 +73,11 @@
     min-height: 100vh; display: flex; align-items: center; justify-content: center;
     background: radial-gradient(ellipse at 30% 40%, #1e1a0e 0%, #0f0f13 70%);
   }
-  .login-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 40px 36px; width: 360px; }
+  .login-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 32px 24px; width: min(360px, calc(100vw - 32px)); }
   .login-card .brand { font-family: 'Rajdhani', sans-serif; font-size: 1.6rem; font-weight: 700; color: var(--accent); text-align: center; margin-bottom: 4px; }
   .login-card .brand-sub { text-align: center; color: var(--text2); font-size: 0.78rem; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 28px; }
   .login-card label { font-size: 0.78rem; color: var(--text2); display: block; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 1px; }
-  .login-card input { width: 100%; background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 10px 14px; border-radius: 8px; font-size: 0.92rem; margin-bottom: 16px; font-family: 'DM Sans', sans-serif; }
+  .login-card input { width: 100%; background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 10px 14px; border-radius: 8px; font-size: 1rem; margin-bottom: 16px; font-family: 'DM Sans', sans-serif; }
   .login-card input:focus { outline: none; border-color: var(--accent); }
   .login-btn { width: 100%; background: var(--accent); color: #000; border: none; padding: 12px; border-radius: 8px; font-size: 1rem; font-weight: 700; cursor: pointer; font-family: 'Rajdhani', sans-serif; letter-spacing: 1px; margin-top: 4px; }
   .login-btn:hover { background: var(--accent2); }
@@ -136,7 +138,7 @@
   .form-group { display: flex; flex-direction: column; gap: 6px; }
   .form-group.full { grid-column: 1 / -1; }
   .form-group label { font-size: 0.73rem; color: var(--text2); text-transform: uppercase; letter-spacing: 1px; }
-  .form-group input, .form-group select { background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 9px 12px; border-radius: 8px; font-size: 0.9rem; font-family: 'DM Sans', sans-serif; }
+  .form-group input, .form-group select { background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 9px 12px; border-radius: 8px; font-size: 1rem; font-family: 'DM Sans', sans-serif; }
   .form-group input:focus, .form-group select:focus { outline: none; border-color: var(--accent); }
   .form-group input[type="date"], .form-group input[type="time"] { color-scheme: dark; }
   .modal-footer { padding: 16px 24px 20px; border-top: 1px solid var(--border); display: flex; gap: 10px; justify-content: flex-end; }
@@ -202,10 +204,53 @@
   .print-header p { font-size: 0.85rem; color: #555; }
   /* ── RESPONSIVE ── */
   @media (max-width: 600px) {
+    /* Topbar */
+    .topbar { padding: 0 12px; height: 52px; }
     .topbar-nav { display: none; }
+    .topbar-brand .logo { font-size: 1rem; }
+    .topbar-brand .sub { display: none; }
+    .user-chip { display: none; }
+
+    /* Main container */
+    .main-container { padding: 16px 12px; }
+
+    /* Stats — 2 col grid */
+    .stats-bar { grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+    .stat-card { padding: 12px 14px; }
+    .stat-card .s-val { font-size: 1.4rem; }
+    .stat-card .s-sub { display: none; }
+
+    /* View tabs */
+    .view-tabs { gap: 4px; margin-bottom: 14px; }
+    .view-tab { padding: 6px 12px; font-size: 0.78rem; }
+
+    /* Toolbar — stack vertically in groups */
+    .toolbar { gap: 8px; }
+    .toolbar input[type="date"] { flex: 1; min-width: 0; }
+    .toolbar input[type="text"] { width: 100% !important; }
+    .toolbar .spacer { display: none; }
+    .btn { padding: 9px 14px; font-size: 0.82rem; }
+
+    /* Form */
     .form-grid { grid-template-columns: 1fr; }
-    .stats-bar { grid-template-columns: 1fr 1fr; }
-    .toolbar { flex-direction: column; align-items: stretch; }
+    .modal { border-radius: 14px 14px 0 0; position: fixed; bottom: 0; left: 0; right: 0; max-height: 92vh; margin: 0; }
+    .modal-overlay { align-items: flex-end; padding: 0; }
+
+    /* Table font */
+    table { font-size: 0.78rem; }
+    thead th { padding: 10px 10px; font-size: 0.65rem; }
+    tbody td { padding: 9px 10px; }
+
+    /* Report cards */
+    .report-grid { grid-template-columns: 1fr; }
+    .report-card { padding: 14px 16px; }
+  }
+
+  /* Extra small — very narrow phones */
+  @media (max-width: 360px) {
+    .topbar-brand .logo { font-size: 0.9rem; }
+    .logout-btn { padding: 5px 8px; font-size: 0.72rem; }
+    .stats-bar { grid-template-columns: 1fr 1fr; gap: 6px; }
   }
 </style>
 <link rel="dns-prefetch" href="https://ckcjzvfnkckuesqqmuks.supabase.co"/>
@@ -239,7 +284,7 @@
     <div class="topbar-brand">
       <div>
         <div class="logo">KAGDIYAL HOLIDAYS</div>
-        <div class="sub">Log Book</div>
+        <div class="sub">Logbook</div>
       </div>
     </div>
     <div class="topbar-nav">
@@ -293,17 +338,19 @@
     <div id="viewLogbook" class="view-section active">
       <!-- Toolbar -->
       <div class="toolbar">
-        <button class="btn btn-outline" onclick="setMonth(0)" title="This Month">This Month</button>
-        <button class="btn btn-outline" onclick="setMonth(-1)" title="Last Month">Last Month</button>
-        <input type="date" id="filterFrom" onchange="loadEntries()" title="From Date"/>
-        <input type="date" id="filterTo" onchange="loadEntries()" title="To Date"/>
-        <input type="text" id="filterVehicle" placeholder="🔍 Vehicle No." oninput="debouncedLoad()" style="width:130px"/>
-        <input type="text" id="filterDriver" placeholder="🔍 Driver Name" oninput="debouncedLoad()" style="width:130px"/>
-        <button class="btn btn-outline" onclick="clearFilters()">Clear</button>
-        <div class="spacer"></div>
-        <button class="btn btn-outline" onclick="printLogbook()" title="Print / PDF">🖨️ Print</button>
-        <button class="btn btn-green" onclick="exportExcel()">⬇ Excel</button>
-        <button class="btn btn-primary" id="addEntryBtn" onclick="openModal()">+ Add Entry</button>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;width:100%">
+          <button class="btn btn-outline" onclick="setMonth(0)">This Month</button>
+          <button class="btn btn-outline" onclick="setMonth(-1)">Last Month</button>
+          <input type="date" id="filterFrom" onchange="loadEntries()" title="From"/>
+          <input type="date" id="filterTo" onchange="loadEntries()" title="To"/>
+          <input type="text" id="filterVehicle" placeholder="🔍 Vehicle No." oninput="debouncedLoad()" style="width:130px"/>
+          <input type="text" id="filterDriver" placeholder="🔍 Driver Name" oninput="debouncedLoad()" style="width:130px"/>
+          <button class="btn btn-outline" onclick="clearFilters()">Clear</button>
+          <div class="spacer"></div>
+          <button class="btn btn-outline" onclick="printLogbook()" title="Print / PDF">🖨️</button>
+          <button class="btn btn-green" onclick="exportExcel()">⬇ Excel</button>
+          <button class="btn btn-primary" id="addEntryBtn" onclick="openModal()">+ Add Entry</button>
+        </div>
       </div>
       <!-- Print Header (visible only when printing) -->
       <div class="print-header">
