@@ -29,16 +29,16 @@
 <!-- SheetJS loaded on demand -->
 <style>
   :root {
-    --bg: #0f0f13;
-    --surface: #1a1a22;
-    --surface2: #22222e;
-    --border: #2e2e3e;
-    --accent: #f0a500;
+    --bg: #000000;
+    --surface: #0d0d0d;
+    --surface2: #141414;
+    --border: #242424;
+    --accent: #ffaa00;
     --accent2: #e07b00;
-    --text: #e8e8f0;
-    --text2: #9090a8;
-    --red: #e05555;
-    --green: #4caf7d;
+    --text: #f0f0f0;
+    --text2: #888888;
+    --red: #ff4444;
+    --green: #00c853;
     --radius: 10px;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
@@ -71,7 +71,7 @@
   /* ── LOGIN ── */
   #loginScreen {
     min-height: 100vh; display: flex; align-items: center; justify-content: center;
-    background: radial-gradient(ellipse at 30% 40%, #1e1a0e 0%, #0f0f13 70%);
+    background: #000000;
   }
   .login-card { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 32px 24px; width: min(360px, calc(100vw - 32px)); }
   .login-card .brand { font-family: 'Rajdhani', sans-serif; font-size: 1.6rem; font-weight: 700; color: var(--accent); text-align: center; margin-bottom: 4px; }
@@ -111,7 +111,7 @@
   /* ── TABLE ── */
   .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow-x: auto; }
   table { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
-  thead th { background: var(--surface2); color: var(--text2); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1.5px; padding: 12px 14px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  thead th { background: var(--surface2); color: var(--text2); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1.5px; padding: 12px 14px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; position: sticky; top: 52px; z-index: 10; }
   tbody tr { border-bottom: 1px solid var(--border); transition: background .15s; }
   tbody tr:last-child { border-bottom: none; }
   tbody tr:hover { background: var(--surface2); }
@@ -119,6 +119,11 @@
   .km-total { font-family: 'Rajdhani', sans-serif; font-weight: 700; color: var(--accent); font-size: 0.95rem; }
   .empty-state { text-align: center; padding: 60px 20px; color: var(--text2); }
   .empty-state .ei { font-size: 2.5rem; margin-bottom: 10px; }
+
+  /* ── SKELETON LOADER ── */
+  @keyframes shimmer { 0%{background-position:-400px 0} 100%{background-position:400px 0} }
+  .skel { background: linear-gradient(90deg, #0d0d0d 25%, #1a1a1a 50%, #0d0d0d 75%); background-size: 400px 100%; animation: shimmer 1.2s infinite; border-radius: 4px; display: inline-block; }
+  .skel-row td { padding: 13px 14px; }
 
   /* action btns */
   .action-btns { display: flex; gap: 6px; }
@@ -159,7 +164,7 @@
   .modal-handle { width:36px; height:4px; background:var(--border); border-radius:2px; margin:10px auto 0; }
 
   /* ── TOAST ── */
-  .toast { position: fixed; bottom: 24px; right: 24px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 12px 20px; border-radius: 10px; font-size: 0.85rem; z-index: 999; opacity: 0; transform: translateY(10px); transition: all .3s; pointer-events: none; }
+  .toast { position: fixed; bottom: 24px; right: 24px; left: auto; background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 12px 20px; border-radius: 10px; font-size: 0.85rem; z-index: 999; opacity: 0; transform: translateY(10px); transition: all .3s; pointer-events: none; }
   .toast.show { opacity: 1; transform: translateY(0); }
   .toast.success { border-color: var(--green); color: var(--green); }
   .toast.error { border-color: var(--red); color: var(--red); }
@@ -192,9 +197,9 @@
 
   /* ── FUEL BADGE ── */
   .fuel-tag { display: inline-block; font-size: 0.7rem; padding: 2px 7px; border-radius: 10px; font-weight: 600; }
-  .fuel-petrol { background: #2a1f0e; color: #f0a500; border: 1px solid #f0a50040; }
-  .fuel-diesel  { background: #0e1a2a; color: #4a9eff; border: 1px solid #4a9eff40; }
-  .fuel-cng     { background: #0e2a1a; color: #4caf7d; border: 1px solid #4caf7d40; }
+  .fuel-petrol { background: #1a1000; color: #ffaa00; border: 1px solid #ffaa0040; }
+  .fuel-diesel  { background: #001020; color: #4a9eff; border: 1px solid #4a9eff40; }
+  .fuel-cng     { background: #001a0a; color: #00c853; border: 1px solid #00c85340; }
 
   /* ── PRINT ── */
   @media print {
@@ -260,6 +265,9 @@
     .report-grid { grid-template-columns: 1fr; }
     .report-card { padding: 14px 16px; }
   }
+
+    /* Toast — bottom center on mobile */
+    .toast { right: 16px; left: 16px; text-align: center; bottom: 16px; }
 
   /* Extra small — very narrow phones */
   @media (max-width: 360px) {
@@ -359,8 +367,7 @@
           <button class="btn btn-outline" onclick="setMonth(-1)">Last Month</button>
           <input type="date" id="filterFrom" onchange="loadEntries()" title="From"/>
           <input type="date" id="filterTo" onchange="loadEntries()" title="To"/>
-          <input type="text" id="filterVehicle" placeholder="🔍 Vehicle No." oninput="debouncedLoad()" style="width:130px"/>
-          <input type="text" id="filterDriver" placeholder="🔍 Driver Name" oninput="debouncedLoad()" style="width:130px"/>
+          <input type="text" id="filterSearch" placeholder="🔍 Vehicle / Driver / Location" oninput="debouncedLoad()" style="width:220px"/>
           <button class="btn btn-outline" onclick="clearFilters()">Clear</button>
           <div class="spacer"></div>
           <button class="btn btn-outline" onclick="printLogbook()" title="Print / PDF">🖨️</button>
@@ -640,9 +647,9 @@ function startApp(data) {
     document.getElementById('addEntryBtn').style.display = 'none';
   }
 
-  loadEntries();
+  // Load entries first, then stats derive from same cache
+  loadEntries().then(() => updateStats());
   loadAutocomplete();
-  updateStats();
 }
 
 function doLogout() {
@@ -713,27 +720,65 @@ function switchView(name) {
 }
 
 // ─── LOAD ENTRIES ─────────────────────────────────────────
+let _allEntriesCache = [];   // full unfiltered data from DB
+let _lastFromVal = null, _lastToVal = null;  // track last DB params
+
+function _showSkeleton() {
+  const skRows = Array(6).fill(0).map(() => `<tr class="skel-row">
+    ${[40,80,70,60,60,90,100,50,50,55,55,55,55,80,60].map(w =>
+      `<td><span class="skel" style="width:${w}px;height:12px">&nbsp;</span></td>`).join('')}
+  </tr>`).join('');
+  document.getElementById('logbookBody').innerHTML = skRows;
+}
+
 async function loadEntries() {
-  const tbody = document.getElementById('logbookBody');
-  tbody.innerHTML = '<tr class="loading-row"><td colspan="15"><span class="spinner"></span> Loading...</td></tr>';
+  const fromVal  = document.getElementById('filterFrom').value;
+  const toVal    = document.getElementById('filterTo').value;
+  const search   = (document.getElementById('filterSearch')?.value || '').trim().toLowerCase();
 
-  let q = db.from('logbook').select('*').order('entry_date', { ascending: false }).order('created_at', { ascending: false }).limit(500);
+  // Only hit DB if date range changed (or first load)
+  const dateChanged = fromVal !== _lastFromVal || toVal !== _lastToVal;
 
-  const fromVal    = document.getElementById('filterFrom').value;
-  const toVal      = document.getElementById('filterTo').value;
-  const vehicleVal = document.getElementById('filterVehicle').value.trim();
-  const driverVal  = document.getElementById('filterDriver').value.trim();
+  if (dateChanged || !_allEntriesCache.length) {
+    _showSkeleton();
+    let q = db.from('logbook')
+      .select('*')
+      .order('entry_date', { ascending: false })
+      .order('created_at', { ascending: false })
+      .limit(500);
+    if (fromVal) q = q.gte('entry_date', fromVal);
+    if (toVal)   q = q.lte('entry_date', toVal);
 
-  if (fromVal)    q = q.gte('entry_date', fromVal);
-  if (toVal)      q = q.lte('entry_date', toVal);
-  if (vehicleVal) q = q.ilike('vehicle_no', `%${vehicleVal}%`);
-  if (driverVal)  q = q.ilike('driver_name', `%${driverVal}%`);
+    const { data, error } = await q;
+    if (error) {
+      toast('Error loading entries', 'error');
+      document.getElementById('logbookBody').innerHTML =
+        '<tr><td colspan="15" style="text-align:center;padding:30px;color:var(--red)">Error loading data</td></tr>';
+      return;
+    }
+    _allEntriesCache = data || [];
+    _lastFromVal = fromVal;
+    _lastToVal   = toVal;
+  }
 
-  const { data, error } = await q;
-  if (error) { toast('Error loading entries', 'error'); tbody.innerHTML = '<tr><td colspan="15" style="text-align:center;padding:30px;color:var(--red)">Error loading data</td></tr>'; return; }
+  // In-memory filter — zero network cost
+  allEntries = search
+    ? _allEntriesCache.filter(r =>
+        (r.vehicle_no  || '').toLowerCase().includes(search) ||
+        (r.driver_name || '').toLowerCase().includes(search) ||
+        (r.location    || '').toLowerCase().includes(search) ||
+        (r.vendor_code || '').toLowerCase().includes(search)
+      )
+    : _allEntriesCache;
 
-  allEntries = data || [];
   renderTable(allEntries);
+}
+
+// Invalidate cache when entries are saved/deleted
+function _invalidateCache() {
+  _allEntriesCache = [];
+  _lastFromVal = null;
+  _lastToVal   = null;
 }
 
 function fuelTag(type) {
@@ -747,8 +792,7 @@ function renderTable(rows) {
   if (!rows.length) {
     const isFiltered = document.getElementById('filterFrom').value ||
                        document.getElementById('filterTo').value ||
-                       document.getElementById('filterVehicle').value ||
-                       document.getElementById('filterDriver').value;
+                       (document.getElementById('filterSearch')?.value || '').trim();
     tbody.innerHTML = `<tr><td colspan="15"><div class="empty-state">
       <div class="ei">${isFiltered ? '🔍' : '📋'}</div>
       <div style="font-size:0.95rem;font-weight:600;margin-bottom:6px">${isFiltered ? 'No entries match your filters' : 'No entries yet'}</div>
@@ -788,29 +832,38 @@ function renderTable(rows) {
 }
 
 // ─── STATS ────────────────────────────────────────────────
-async function updateStats() {
+function _computeStats(data) {
   const today = new Date().toISOString().split('T')[0];
   const firstOfMonth = today.slice(0,8) + '01';
 
-  const [todayRes, monthRes] = await Promise.all([
-    db.from('logbook').select('id', { count: 'exact' }).eq('entry_date', today),
-    db.from('logbook').select('starting_km, closing_km, vehicle_no, fuel_amount').gte('entry_date', firstOfMonth)
-  ]);
+  const todayData = data.filter(r => r.entry_date === today);
+  const monthData = data.filter(r => r.entry_date >= firstOfMonth);
 
-  const todayCount = todayRes.count || 0;
-  const monthData  = monthRes.data || [];
-  const totalKM    = monthData.reduce((s, r) => {
-    if (r.closing_km != null && r.starting_km != null) s += (r.closing_km - r.starting_km);
-    return s;
-  }, 0);
-  const totalFuel  = monthData.reduce((s, r) => s + (r.fuel_amount || 0), 0);
+  const totalKM = monthData.reduce((s,r) =>
+    s + ((r.closing_km != null && r.starting_km != null) ? r.closing_km - r.starting_km : 0), 0);
+  const totalFuel = monthData.reduce((s,r) => s + (r.fuel_amount || 0), 0);
   const uniqueVehicles = new Set(monthData.map(r => r.vehicle_no).filter(Boolean)).size;
 
-  document.getElementById('statToday').textContent    = todayCount;
+  document.getElementById('statToday').textContent    = todayData.length;
   document.getElementById('statMonth').textContent    = monthData.length;
   document.getElementById('statKM').textContent       = fmt(totalKM);
   document.getElementById('statVehicles').textContent = uniqueVehicles;
   document.getElementById('statFuel').textContent     = '₹' + fmt(totalFuel);
+}
+
+async function updateStats() {
+  // If we have a full (unfiltered) cache, compute locally — zero DB calls
+  if (_allEntriesCache.length && !_lastFromVal && !_lastToVal) {
+    _computeStats(_allEntriesCache);
+    return;
+  }
+  // Otherwise fetch month data fresh
+  const today = new Date().toISOString().split('T')[0];
+  const firstOfMonth = today.slice(0,8) + '01';
+  const { data } = await db.from('logbook')
+    .select('entry_date, starting_km, closing_km, vehicle_no, fuel_amount')
+    .gte('entry_date', firstOfMonth);
+  _computeStats(data || []);
 }
 
 // ─── AUTOCOMPLETE ─────────────────────────────────────────
@@ -925,7 +978,10 @@ async function saveEntry() {
 
   toast(editingId ? 'Entry updated!' : 'Entry added!', 'success');
   closeModal();
-  await Promise.all([loadEntries(), updateStats(), loadAutocomplete()]);
+  // Invalidate cache so next loadEntries hits DB fresh
+  _invalidateCache();
+  // Parallel refresh — non-blocking feel
+  Promise.all([loadEntries(), updateStats(), loadAutocomplete()]);
 }
 
 // ─── DELETE ───────────────────────────────────────────────
@@ -953,8 +1009,9 @@ async function doDelete() {
   const { error } = await db.from('logbook').delete().eq('id', id);
   if (error) { toast('Delete failed', 'error'); return; }
   toast('Entry deleted', 'success');
-  // Remove from local cache — no need for full reload
-  allEntries = allEntries.filter(e => e.id !== id);
+  // Remove from both caches immediately — instant UI update
+  allEntries        = allEntries.filter(e => e.id !== id);
+  _allEntriesCache  = _allEntriesCache.filter(e => e.id !== id);
   renderTable(allEntries);
   updateStats();
 }
@@ -972,6 +1029,7 @@ function setToday() {
   const today = new Date().toISOString().split('T')[0];
   document.getElementById('filterFrom').value = today;
   document.getElementById('filterTo').value   = today;
+  _invalidateCache();
   loadEntries();
 }
 
@@ -983,14 +1041,16 @@ function setMonth(offset) {
   const lastDay = new Date(y, d.getMonth() + 1, 0).getDate();
   document.getElementById('filterFrom').value = `${y}-${m}-01`;
   document.getElementById('filterTo').value   = `${y}-${m}-${lastDay}`;
+  _invalidateCache();
   loadEntries();
 }
 
 function clearFilters() {
-  document.getElementById('filterFrom').value    = '';
-  document.getElementById('filterTo').value      = '';
-  document.getElementById('filterVehicle').value = '';
-  document.getElementById('filterDriver').value  = '';
+  document.getElementById('filterFrom').value   = '';
+  document.getElementById('filterTo').value     = '';
+  const s = document.getElementById('filterSearch');
+  if (s) s.value = '';
+  _invalidateCache();
   loadEntries();
 }
 
