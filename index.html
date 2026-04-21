@@ -109,9 +109,10 @@
   .btn-green:hover { opacity: .85; }
 
   /* ── TABLE ── */
-  .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow-x: auto; }
+  .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+  .table-scroll { overflow-x: auto; }
   table { width: 100%; border-collapse: collapse; font-size: 0.83rem; }
-  thead th { background: var(--surface2); color: var(--text2); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1.5px; padding: 12px 14px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; position: sticky; top: 52px; z-index: 10; }
+  thead th { background: var(--surface2); color: var(--text2); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1.5px; padding: 12px 14px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; position: sticky; top: 0; z-index: 10; }
   tbody tr { border-bottom: 1px solid var(--border); transition: background .15s; }
   tbody tr:last-child { border-bottom: none; }
   tbody tr:hover { background: var(--surface2); }
@@ -382,6 +383,7 @@
       </div>
       <!-- Table -->
       <div class="table-wrap">
+        <div class="table-scroll">
         <table>
           <thead>
             <tr>
@@ -406,6 +408,7 @@
             <tr class="loading-row"><td colspan="15"><span class="spinner"></span> Loading...</td></tr>
           </tbody>
         </table>
+        </div>
       </div>
     </div>
 
