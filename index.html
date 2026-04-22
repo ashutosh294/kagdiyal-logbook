@@ -202,6 +202,22 @@
   .fuel-diesel  { background: #001020; color: #4a9eff; border: 1px solid #4a9eff40; }
   .fuel-cng     { background: #001a0a; color: #00c853; border: 1px solid #00c85340; }
 
+  /* ── FUEL ROWS ── */
+  .fuel-rows { display: flex; flex-direction: column; gap: 8px; }
+  .fuel-row { display: grid; grid-template-columns: 100px 80px 90px 28px; gap: 6px; align-items: center; }
+  .fuel-row select, .fuel-row input { background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 7px 10px; border-radius: 8px; font-size: 0.88rem; font-family: 'DM Sans', sans-serif; width: 100%; }
+  .fuel-row select:focus, .fuel-row input:focus { outline: none; border-color: var(--accent); }
+  .fuel-row-remove { background: none; border: 1px solid var(--border); color: var(--text2); border-radius: 6px; width: 28px; height: 28px; cursor: pointer; font-size: 1rem; line-height: 1; display: flex; align-items: center; justify-content: center; padding: 0; flex-shrink: 0; }
+  .fuel-row-remove:hover { border-color: var(--red); color: var(--red); }
+  .fuel-add-btn { background: none; border: 1px dashed var(--border); color: var(--text2); border-radius: 8px; padding: 6px 12px; font-size: 0.8rem; cursor: pointer; font-family: 'DM Sans', sans-serif; width: 100%; margin-top: 2px; transition: all .2s; }
+  .fuel-add-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .fuel-col-labels { display: grid; grid-template-columns: 100px 80px 90px 28px; gap: 6px; }
+  .fuel-col-labels span { font-size: 0.68rem; color: var(--text2); text-transform: uppercase; letter-spacing: 1px; }
+  @media (max-width: 600px) {
+    .fuel-row { grid-template-columns: 90px 70px 82px 28px; }
+    .fuel-col-labels { grid-template-columns: 90px 70px 82px 28px; }
+  }
+
   /* ── PRINT ── */
   @media print {
     .topbar, .view-tabs, .toolbar, #installBanner, .toast, .modal-overlay { display: none !important; }
@@ -506,22 +522,13 @@
           <label>Total KM (auto)</label>
           <input type="number" id="fTotalKM" placeholder="—" readonly style="opacity:.6" />
         </div>
-        <div class="form-group">
-          <label>Fuel Type</label>
-          <select id="fFuelType" onchange="updateFuelUnit()">
-            <option value="">-- None --</option>
-            <option value="Petrol">Petrol</option>
-            <option value="Diesel">Diesel</option>
-            <option value="CNG">CNG</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label id="fuelUnitLabel">Fuel Litres</label>
-          <input type="number" id="fFuelLitres" placeholder="0.0" step="0.1" oninput="updateFuelUnit()" />
-        </div>
-        <div class="form-group">
-          <label>Fuel Amount (₹)</label>
-          <input type="number" id="fFuelAmount" placeholder="0" />
+        <div class="form-group full" style="margin-top:4px">
+          <label style="margin-bottom:8px;display:block">Fuel</label>
+          <div class="fuel-col-labels">
+            <span>Type</span><span>Qty</span><span>Amount ₹</span><span></span>
+          </div>
+          <div class="fuel-rows" id="fuelRows"></div>
+          <button type="button" class="fuel-add-btn" onclick="addFuelRow()">+ Add Fuel</button>
         </div>
         <div class="form-group full">
           <label>Remarks / Notes</label>
@@ -685,18 +692,70 @@ function ensureXLSX(cb) {
   document.head.appendChild(s);
 }
 
-// CNG = kg, others = L
-function updateFuelUnit() {
-  const type = document.getElementById('fFuelType').value;
-  const label = document.getElementById('fuelUnitLabel');
-  const input = document.getElementById('fFuelLitres');
-  if (type === 'CNG') {
-    label.textContent = 'Fuel (kg)';
-    input.placeholder = '0.0 kg';
+// ─── MULTI-FUEL ROWS ──────────────────────────────────────
+function _fuelUnit(type) { return type === 'CNG' ? 'kg' : 'L'; }
+
+function addFuelRow(data = {}) {
+  const container = document.getElementById('fuelRows');
+  const idx = container.children.length;
+  const div = document.createElement('div');
+  div.className = 'fuel-row';
+  div.innerHTML = `
+    <select onchange="this.parentNode.querySelector('.fuel-qty').placeholder=this.value==='CNG'?'0.0 kg':'0.0 L'">
+      <option value="">--</option>
+      <option value="Petrol"${data.type==='Petrol'?' selected':''}>Petrol</option>
+      <option value="Diesel"${data.type==='Diesel'?' selected':''}>Diesel</option>
+      <option value="CNG"${data.type==='CNG'?' selected':''}>CNG</option>
+    </select>
+    <input class="fuel-qty" type="number" step="0.1" min="0"
+      placeholder="${data.type==='CNG'?'0.0 kg':'0.0 L'}"
+      value="${data.qty != null ? data.qty : ''}"/>
+    <input class="fuel-amt" type="number" step="0.01" min="0"
+      placeholder="0"
+      value="${data.amount != null ? data.amount : ''}"/>
+    <button type="button" class="fuel-row-remove" onclick="removeFuelRow(this)" title="Remove">✕</button>`;
+  container.appendChild(div);
+}
+
+function removeFuelRow(btn) {
+  const row = btn.closest('.fuel-row');
+  const container = document.getElementById('fuelRows');
+  if (container.children.length <= 1) {
+    // Reset instead of remove — keep at least one row
+    row.querySelectorAll('select')[0].value = '';
+    row.querySelectorAll('input')[0].value = '';
+    row.querySelectorAll('input')[1].value = '';
   } else {
-    label.textContent = 'Fuel (Litres)';
-    input.placeholder = '0.0 L';
+    row.remove();
   }
+}
+
+function getFuels() {
+  const rows = document.getElementById('fuelRows').querySelectorAll('.fuel-row');
+  const fuels = [];
+  rows.forEach(row => {
+    const type   = row.querySelector('select').value;
+    const qty    = parseFloat(row.querySelector('.fuel-qty').value);
+    const amount = parseFloat(row.querySelector('.fuel-amt').value);
+    if (type) fuels.push({ type, qty: isNaN(qty)?null:qty, amount: isNaN(amount)?null:amount });
+  });
+  return fuels;
+}
+
+function setFuels(fuels) {
+  const container = document.getElementById('fuelRows');
+  container.innerHTML = '';
+  if (!fuels || !fuels.length) { addFuelRow(); return; }
+  fuels.forEach(f => addFuelRow(f));
+}
+
+// Legacy single-fuel → fuels array converter (for old DB rows)
+function _legacyToFuels(r) {
+  if (r.fuels) {
+    try { return typeof r.fuels === 'string' ? JSON.parse(r.fuels) : r.fuels; } catch(e) {}
+  }
+  if (r.fuel_type) return [{ type: r.fuel_type, qty: r.fuel_litres, amount: r.fuel_amount }];
+  return [];
 }
 
 // Auto-login if session valid — safe init
@@ -790,6 +849,18 @@ function fuelTag(type) {
   return `<span class="fuel-tag ${cls}">${type}</span>`;
 }
 
+function renderFuelCell(r) {
+  const fuels = _legacyToFuels(r);
+  if (!fuels.length) return '—';
+  return fuels.map(f => {
+    const unit = f.type === 'CNG' ? 'kg' : 'L';
+    const detail = f.qty || f.amount
+      ? `<br><small style="color:var(--text2)">${f.qty != null ? f.qty + unit : ''}${f.qty && f.amount ? ' ' : ''}${f.amount != null ? '₹' + f.amount : ''}</small>`
+      : '';
+    return fuelTag(f.type) + detail;
+  }).join('<span style="display:block;height:4px"></span>');
+}
+
 function renderTable(rows) {
   const tbody = document.getElementById('logbookBody');
   if (!rows.length) {
@@ -822,7 +893,7 @@ function renderTable(rows) {
       <td>${r.starting_km ?? '—'}</td>
       <td>${r.closing_km ?? '—'}</td>
       <td class="km-total">${totalKM !== '—' ? totalKM + ' km' : '—'}</td>
-      <td>${fuelTag(r.fuel_type)}${r.fuel_litres ? `<br><small style="color:var(--text2)">${r.fuel_litres}${r.fuel_type==='CNG'?'kg':'L'} ₹${r.fuel_amount||0}</small>` : ''}</td>
+      <td>${renderFuelCell(r)}</td>
       <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.remarks||''}">${r.remarks ? `<span style="color:var(--text2);font-size:0.8rem">${r.remarks}</span>` : '—'}</td>
       <td>
         ${canEdit ? `<div class="action-btns">
@@ -844,7 +915,15 @@ function _computeStats(data) {
 
   const totalKM = monthData.reduce((s,r) =>
     s + ((r.closing_km != null && r.starting_km != null) ? r.closing_km - r.starting_km : 0), 0);
-  const totalFuel = monthData.reduce((s,r) => s + (r.fuel_amount || 0), 0);
+  const totalFuel = monthData.reduce((s,r) => {
+    if (r.fuels) {
+      try {
+        const arr = typeof r.fuels === 'string' ? JSON.parse(r.fuels) : r.fuels;
+        return s + arr.reduce((a,f) => a + (f.amount||0), 0);
+      } catch(e) {}
+    }
+    return s + (r.fuel_amount || 0);
+  }, 0);
   const uniqueVehicles = new Set(monthData.map(r => r.vehicle_no).filter(Boolean)).size;
 
   document.getElementById('statToday').textContent    = todayData.length;
@@ -889,7 +968,7 @@ function openModal(id = null) {
   document.getElementById('modalOverlay').classList.add('open');
 
   if (!id) {
-    clearForm();
+    clearForm();  // clearForm calls setFuels([]) which adds one empty row
     document.getElementById('fDate').value = new Date().toISOString().split('T')[0];
   } else {
     const r = allEntries.find(e => e.id === id);
@@ -904,12 +983,9 @@ function openModal(id = null) {
     document.getElementById('fCloseTime').value   = r.closing_time || '';
     document.getElementById('fStartKM').value     = r.starting_km ?? '';
     document.getElementById('fCloseKM').value     = r.closing_km ?? '';
-    document.getElementById('fFuelType').value    = r.fuel_type || '';
-    document.getElementById('fFuelLitres').value  = r.fuel_litres ?? '';
-    document.getElementById('fFuelAmount').value  = r.fuel_amount ?? '';
+    setFuels(_legacyToFuels(r));
     document.getElementById('fRemarks').value     = r.remarks || '';
     calcKM();
-    updateFuelUnit();
   }
 }
 
@@ -919,11 +995,11 @@ function closeModal() {
 }
 
 function clearForm() {
-  ['fDate','fVehicleNo','fVendorCode','fDriverName','fLocation','fStartTime','fCloseTime','fStartKM','fCloseKM','fTotalKM','fFuelLitres','fFuelAmount','fRemarks'].forEach(id => {
+  ['fDate','fVehicleNo','fVendorCode','fDriverName','fLocation','fStartTime','fCloseTime','fStartKM','fCloseKM','fTotalKM','fRemarks'].forEach(id => {
     document.getElementById(id).value = '';
   });
   document.getElementById('fVehicleType').value = '';
-  document.getElementById('fFuelType').value = '';
+  setFuels([]);  // reset to one empty fuel row
 }
 
 function calcKM() {
@@ -948,6 +1024,9 @@ async function saveEntry() {
     return;
   }
 
+  const fuels = getFuels();
+  // Also keep legacy columns for backward compat (first fuel entry)
+  const f0 = fuels[0] || {};
   const payload = {
     entry_date:    date,
     vehicle_no:    vehicle.toUpperCase(),
@@ -959,9 +1038,10 @@ async function saveEntry() {
     closing_time:  document.getElementById('fCloseTime').value || null,
     starting_km:   parseFloat(document.getElementById('fStartKM').value) || null,
     closing_km:    parseFloat(document.getElementById('fCloseKM').value) || null,
-    fuel_type:     document.getElementById('fFuelType').value || null,
-    fuel_litres:   parseFloat(document.getElementById('fFuelLitres').value) || null,
-    fuel_amount:   parseFloat(document.getElementById('fFuelAmount').value) || null,
+    fuel_type:     f0.type  || null,
+    fuel_litres:   f0.qty   || null,
+    fuel_amount:   fuels.reduce((s,f) => s + (f.amount||0), 0) || null,
+    fuels:         fuels.length ? JSON.stringify(fuels) : null,
     remarks:       document.getElementById('fRemarks').value.trim() || null,
   };
 
@@ -1088,9 +1168,15 @@ function _doExport() {
     'Start KM': r.starting_km ?? '',
     'Close KM': r.closing_km ?? '',
     'Total KM': (r.closing_km != null && r.starting_km != null) ? (r.closing_km - r.starting_km) : '',
-    'Fuel Type': r.fuel_type || '',
-    'Fuel Qty': r.fuel_litres ? `${r.fuel_litres}${r.fuel_type==='CNG'?'kg':'L'}` : '',
-    'Fuel Amount (₹)': r.fuel_amount ?? '',
+    'Fuel Details': (() => {
+      const fs = _legacyToFuels(r);
+      return fs.map(f => `${f.type||''}${f.qty!=null?' '+f.qty+_fuelUnit(f.type):''}${f.amount!=null?' ₹'+f.amount:''}`).join(' | ');
+    })(),
+    'Total Fuel ₹': (() => {
+      const fs = _legacyToFuels(r);
+      const t = fs.reduce((s,f) => s+(f.amount||0), 0);
+      return t || '';
+    })(),
     'Remarks': r.remarks || '',
   }));
 
@@ -1101,7 +1187,7 @@ function _doExport() {
     '#': '', 'Date': 'TOTAL', 'Vehicle No': '', 'Vehicle Type': '', 'Vendor Code': '',
     'Driver Name': '', 'Location': '', 'Start Time': '', 'Close Time': '',
     'Start KM': '', 'Close KM': '', 'Total KM': Math.round(totKM),
-    'Fuel Type': '', 'Fuel Qty': '', 'Fuel Amount (₹)': Math.round(totFuel), 'Remarks': ''
+    'Fuel Details': '', 'Total Fuel ₹': Math.round(totFuel), 'Remarks': ''
   });
 
   const ws = XLSX.utils.json_to_sheet(rows);
