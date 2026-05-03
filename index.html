@@ -110,6 +110,7 @@
   .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
   .btn-green { background: var(--green); color: #fff; }
   .btn-green:hover { opacity: .85; }
+  .compact-toggle-btn { margin-left: auto; }
 
   /* â”€â”€ TABLE â”€â”€ */
   .table-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
@@ -120,6 +121,10 @@
   tbody tr:last-child { border-bottom: none; }
   tbody tr:hover { background: var(--surface2); }
   tbody td { padding: 11px 14px; color: var(--text); white-space: nowrap; }
+  body.compact-mode table { font-size: 0.78rem; }
+  body.compact-mode thead th { padding: 9px 10px; font-size: 0.64rem; }
+  body.compact-mode tbody td { padding: 8px 10px; }
+  body.compact-mode .stat-card { padding: 12px 14px; }
   .km-total { font-family: 'Rajdhani', sans-serif; font-weight: 700; color: var(--accent); font-size: 0.95rem; }
   .empty-state { text-align: center; padding: 60px 20px; color: var(--text2); }
   .empty-state .ei { font-size: 2.5rem; margin-bottom: 10px; }
@@ -131,9 +136,20 @@
 
   /* action btns */
   .action-btns { display: flex; gap: 6px; }
-  .act-btn { background: none; border: 1px solid var(--border); color: var(--text2); padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; transition: all .2s; }
+  .act-btn { background: none; border: 1px solid var(--border); color: var(--text2); padding: 6px 12px; border-radius: 8px; font-size: 0.78rem; cursor: pointer; transition: all .2s; min-height: 36px; min-width: 52px; }
   .act-btn.edit:hover { border-color: var(--accent); color: var(--accent); }
   .act-btn.del:hover { border-color: var(--red); color: var(--red); }
+  .mobile-cards { display: none; }
+  .entry-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px; margin-bottom: 10px; }
+  .entry-card .ec-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+  .entry-card .ec-veh { font-weight: 700; color: var(--text); font-size: 0.95rem; }
+  .entry-card .ec-date { font-size: 0.78rem; color: var(--text2); }
+  .entry-card .ec-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 10px; margin-top: 8px; }
+  .entry-card .ec-item { background: var(--surface2); border-radius: 8px; padding: 8px 10px; }
+  .entry-card .ec-label { font-size: 0.66rem; color: var(--text2); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3px; }
+  .entry-card .ec-val { font-size: 0.84rem; color: var(--text); word-break: break-word; }
+  .entry-card .ec-actions { display: flex; gap: 8px; margin-top: 10px; }
+  .entry-card .ec-actions .act-btn { flex: 1; }
 
   /* â”€â”€ MODAL â”€â”€ */
   .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 200; align-items: center; justify-content: center; padding: 16px; }
@@ -141,7 +157,7 @@
   .modal { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; width: 100%; max-width: 620px; max-height: 90vh; overflow-y: auto; }
   .modal-header { padding: 20px 24px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
   .modal-header h2 { font-family: 'Rajdhani', sans-serif; font-size: 1.25rem; font-weight: 700; color: var(--accent); }
-  .modal-close { background: none; border: none; color: var(--text2); font-size: 1.4rem; cursor: pointer; line-height: 1; }
+  .modal-close { background: none; border: none; color: var(--text2); font-size: 1.4rem; cursor: pointer; line-height: 1; min-width: 44px; min-height: 44px; border-radius: 8px; }
   .modal-body { padding: 20px 24px; }
   .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
   .form-group { display: flex; flex-direction: column; gap: 6px; }
@@ -186,6 +202,31 @@
   .view-tab.active { background: var(--accent); border-color: var(--accent); color: #000; font-weight: 700; }
   .view-section { display: none; }
   .view-section.active { display: block; }
+  .mobile-add-btn {
+    display: none; position: fixed; right: 14px; bottom: 20px; z-index: 420;
+    border: none; border-radius: 999px; background: var(--accent); color: #000;
+    box-shadow: 0 8px 24px rgba(0,0,0,.35); min-height: 50px; padding: 0 16px;
+    font-family: 'Rajdhani', sans-serif; font-size: 0.9rem; font-weight: 700; letter-spacing: .4px; cursor: pointer;
+  }
+  .mobile-filter-btn { display: none; }
+  .filter-sheet-overlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.72); z-index: 410;
+    align-items: flex-end; justify-content: center; padding: 0;
+  }
+  .filter-sheet-overlay.open { display: flex; }
+  .filter-sheet {
+    width: 100%; max-width: 680px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px 16px 0 0; padding: 14px 14px calc(14px + env(safe-area-inset-bottom));
+  }
+  .filter-sheet h3 { font-family: 'Rajdhani', sans-serif; color: var(--accent); font-size: 1.1rem; margin-bottom: 10px; }
+  .filter-sheet .fs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .filter-sheet .fs-grid .full { grid-column: 1 / -1; }
+  .filter-sheet input {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+    border-radius: 8px; padding: 10px 12px; font-size: .9rem; font-family: 'DM Sans', sans-serif;
+  }
+  .filter-sheet .fs-actions { display: flex; gap: 8px; margin-top: 12px; }
+  .filter-sheet .fs-actions .btn { flex: 1; }
 
   /* â”€â”€ REPORT CARDS â”€â”€ */
   .report-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
@@ -270,13 +311,17 @@
     .toolbar input[type="date"] { flex: 1; min-width: 0; }
     .toolbar input[type="text"] { width: 100% !important; }
     .toolbar .spacer { display: none; }
-    .btn { padding: 9px 14px; font-size: 0.82rem; }
+    .btn { padding: 9px 14px; font-size: 0.82rem; min-height: 42px; }
+    .toolbar .desktop-compact-btn { display: none; }
+    .mobile-filter-btn { display: inline-flex; align-items: center; justify-content: center; }
+    .toolbar .mobile-hide { display: none; }
 
     /* Form */
     .form-grid { grid-template-columns: 1fr; }
     .modal { border-radius: 14px 14px 0 0; position: fixed; bottom: 0; left: 0; right: 0; max-height: 92vh; margin: 0; }
     .modal-overlay { align-items: flex-end; padding: 0; }
-    .table-scroll { max-height: none; }
+    .table-wrap { display: none; }
+    .mobile-cards { display: block; }
 
     /* Table font */
     table { font-size: 0.78rem; }
@@ -286,6 +331,12 @@
     /* Report cards */
     .report-grid { grid-template-columns: 1fr; }
     .report-card { padding: 14px 16px; }
+    .mobile-add-btn { display: block; }
+    .logout-btn { min-height: 40px; }
+    .act-btn { min-height: 40px; }
+  }
+  @media (min-width: 601px) {
+    .filter-sheet-overlay { display: none !important; }
   }
 
     /* Toast â€” bottom center on mobile */
@@ -387,17 +438,19 @@
       <!-- Toolbar -->
       <div class="toolbar">
         <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;width:100%">
-          <button class="btn btn-outline" onclick="setToday()">Today</button>
-          <button class="btn btn-outline" onclick="setMonth(0)">This Month</button>
-          <button class="btn btn-outline" onclick="setMonth(-1)">Last Month</button>
-          <input type="date" id="filterFrom" onchange="loadEntries()" title="From"/>
-          <input type="date" id="filterTo" onchange="loadEntries()" title="To"/>
-          <input type="text" id="filterSearch" placeholder="Search vehicle / driver / location" oninput="debouncedLoad()" style="width:220px"/>
+          <button class="btn btn-outline mobile-hide" onclick="setToday()">Today</button>
+          <button class="btn btn-outline mobile-hide" onclick="setMonth(0)">This Month</button>
+          <button class="btn btn-outline mobile-hide" onclick="setMonth(-1)">Last Month</button>
+          <input class="mobile-hide" type="date" id="filterFrom" onchange="loadEntries()" title="From"/>
+          <input class="mobile-hide" type="date" id="filterTo" onchange="loadEntries()" title="To"/>
+          <input class="mobile-hide" type="text" id="filterSearch" placeholder="Search vehicle / driver / location" oninput="debouncedLoad()" style="width:220px"/>
+          <button class="btn btn-outline mobile-filter-btn" onclick="openFilterSheet()">Filters</button>
           <button class="btn btn-outline" onclick="clearFilters()">Clear</button>
           <div class="spacer"></div>
           <button class="btn btn-outline" onclick="printLogbook()" title="Print / PDF">Print</button>
           <button class="btn btn-green" onclick="exportExcel()">Excel</button>
           <button class="btn btn-primary" id="addEntryBtn" onclick="openModal()">+ Add Entry</button>
+          <button class="btn btn-outline compact-toggle-btn desktop-compact-btn" id="compactToggleBtn" onclick="toggleCompactMode()">Compact: Off</button>
         </div>
       </div>
       <!-- Print Header (visible only when printing) -->
@@ -434,6 +487,7 @@
         </table>
         </div>
       </div>
+      <div class="mobile-cards" id="logbookCards"></div>
     </div>
 
     <!-- â”€â”€ VEHICLE REPORT VIEW â”€â”€ -->
@@ -563,6 +617,32 @@
     </div>
   </div>
 </div>
+<button class="mobile-add-btn" id="mobileAddBtn" onclick="openModal()">+ Add Entry</button>
+<div class="filter-sheet-overlay" id="filterSheetOverlay">
+  <div class="filter-sheet">
+    <div class="modal-handle"></div>
+    <h3>Filters</h3>
+    <div class="fs-grid">
+      <div>
+        <div style="font-size:.7rem;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">From</div>
+        <input type="date" id="mFilterFrom" />
+      </div>
+      <div>
+        <div style="font-size:.7rem;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">To</div>
+        <input type="date" id="mFilterTo" />
+      </div>
+      <div class="full">
+        <div style="font-size:.7rem;color:var(--text2);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Search</div>
+        <input type="text" id="mFilterSearch" placeholder="Search vehicle / driver / location" />
+      </div>
+    </div>
+    <div class="fs-actions">
+      <button class="btn btn-outline" onclick="closeFilterSheet()">Cancel</button>
+      <button class="btn btn-outline" onclick="clearMobileFilters()">Clear</button>
+      <button class="btn btn-primary" onclick="applyMobileFilters()">Apply</button>
+    </div>
+  </div>
+</div>
 
 <!-- TOAST -->
   <div class="toast" id="toast" aria-live="polite"></div>
@@ -575,6 +655,7 @@ const SUPABASE_KEY  = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 // â”€â”€â”€ INIT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 let db, currentUser = null, editingId = null, allEntries = [];
 let _toastTimer = null;
+const PREFS_KEY = 'kh_logbook_prefs_v1';
 
 function escapeHTML(value) {
   return String(value ?? '').replace(/[&<>"']/g, ch => ({
@@ -607,7 +688,7 @@ function kmFor(row) {
 }
 
 function canManageEntries() {
-  return (currentUser?.role || 'Admin').toLowerCase() === 'admin';
+  return currentUser?.role?.toLowerCase() === 'admin';
 }
 
 function publicUser(user) {
@@ -705,6 +786,7 @@ function startApp(data) {
   document.getElementById('appScreen').style.display   = 'block';
   document.getElementById('userChip').textContent = `${data.username} (${data.role || 'Admin'})`;
   document.getElementById('addEntryBtn').style.display = canManageEntries() ? '' : 'none';
+  document.getElementById('mobileAddBtn').style.display = canManageEntries() ? '' : 'none';
 
   // Load entries first, then stats derive from same cache
   loadEntries().then(() => updateStats());
@@ -730,6 +812,65 @@ if ('fonts' in document) {
 // Debounce helper â€” prevents DB query on every keystroke
 let _debTimer;
 function debouncedLoad() { clearTimeout(_debTimer); _debTimer = setTimeout(loadEntries, 320); }
+
+function getPrefs() {
+  try { return JSON.parse(localStorage.getItem(PREFS_KEY) || '{}'); }
+  catch { return {}; }
+}
+
+function setPrefs(next) {
+  const merged = { ...getPrefs(), ...next };
+  localStorage.setItem(PREFS_KEY, JSON.stringify(merged));
+}
+
+function setCompactMode(on) {
+  document.body.classList.toggle('compact-mode', !!on);
+  const btn = document.getElementById('compactToggleBtn');
+  if (btn) btn.textContent = `Compact: ${on ? 'On' : 'Off'}`;
+}
+
+function toggleCompactMode() {
+  const on = !document.body.classList.contains('compact-mode');
+  setCompactMode(on);
+  setPrefs({ compactMode: on });
+}
+
+function initViewPrefs() {
+  const prefs = getPrefs();
+  setCompactMode(!!prefs.compactMode);
+}
+
+function openFilterSheet() {
+  const overlay = document.getElementById('filterSheetOverlay');
+  if (!overlay) return;
+  document.getElementById('mFilterFrom').value = document.getElementById('filterFrom')?.value || '';
+  document.getElementById('mFilterTo').value = document.getElementById('filterTo')?.value || '';
+  document.getElementById('mFilterSearch').value = document.getElementById('filterSearch')?.value || '';
+  overlay.classList.add('open');
+}
+
+function closeFilterSheet() {
+  const overlay = document.getElementById('filterSheetOverlay');
+  if (overlay) overlay.classList.remove('open');
+}
+
+function clearMobileFilters() {
+  const from = document.getElementById('mFilterFrom');
+  const to = document.getElementById('mFilterTo');
+  const search = document.getElementById('mFilterSearch');
+  if (from) from.value = '';
+  if (to) to.value = '';
+  if (search) search.value = '';
+}
+
+function applyMobileFilters() {
+  document.getElementById('filterFrom').value = document.getElementById('mFilterFrom').value;
+  document.getElementById('filterTo').value = document.getElementById('mFilterTo').value;
+  document.getElementById('filterSearch').value = document.getElementById('mFilterSearch').value;
+  closeFilterSheet();
+  _invalidateCache();
+  loadEntries();
+}
 
 // Lazy SheetJS loader
 let _xlsxReady = false;
@@ -832,6 +973,7 @@ function fuelQtyFor(row) {
 // Auto-login if session valid â€” safe init
 function _initApp() {
   if (!initDB()) return;  // abort if supabase failed
+  initViewPrefs();
   // Attach keydown to password field safely (no inline onkeydown needed)
   const passEl = document.getElementById('loginPass');
   if (passEl) passEl.addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
@@ -848,6 +990,10 @@ function switchView(name) {
   document.querySelectorAll('.view-tab').forEach((t,i) => t.classList.toggle('active', ['logbook','vehicle','driver'][i] === name));
   document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
   document.getElementById('view' + name.charAt(0).toUpperCase() + name.slice(1)).classList.add('active');
+  const mobileAddBtn = document.getElementById('mobileAddBtn');
+  if (mobileAddBtn) {
+    mobileAddBtn.style.display = (name === 'logbook' && canManageEntries()) ? '' : 'none';
+  }
   if (name === 'vehicle') loadVehicleReport();
   if (name === 'driver')  loadDriverReport();
 }
@@ -938,19 +1084,62 @@ function renderFuelCell(r) {
   }).join('<span style="display:block;height:4px"></span>');
 }
 
+function fuelSummary(r) {
+  const fuels = _legacyToFuels(r);
+  if (!fuels.length) return '--';
+  return fuels.map(f => {
+    const unit = f.type === 'CNG' ? 'kg' : 'L';
+    const qty = f.qty !== null ? `${f.qty}${unit}` : '';
+    const amount = f.amount !== null ? `Rs ${fmt(f.amount)}` : '';
+    return [f.type || '', qty, amount].filter(Boolean).join(' ');
+  }).join(' | ');
+}
+
+function renderCards(rows) {
+  const wrap = document.getElementById('logbookCards');
+  if (!wrap) return;
+  wrap.innerHTML = rows.map((r, i) => {
+    const totalKM = kmFor(r);
+    const canEdit = canManageEntries();
+    const rowId = escapeAttr(r.id);
+    return `<div class="entry-card">
+      <div class="ec-top">
+        <div class="ec-veh">${displayText(r.vehicle_no)}</div>
+        <div class="ec-date">${formatDate(r.entry_date)}</div>
+      </div>
+      <div class="ec-grid">
+        <div class="ec-item"><div class="ec-label">Driver</div><div class="ec-val">${displayText(r.driver_name)}</div></div>
+        <div class="ec-item"><div class="ec-label">Vendor</div><div class="ec-val">${displayText(r.vendor_code)}</div></div>
+        <div class="ec-item"><div class="ec-label">Location</div><div class="ec-val">${displayText(r.location)}</div></div>
+        <div class="ec-item"><div class="ec-label">Total KM</div><div class="ec-val km-total">${totalKM !== null ? escapeHTML(fmt(totalKM)) + ' km' : '--'}</div></div>
+        <div class="ec-item"><div class="ec-label">Time</div><div class="ec-val">${displayText(r.starting_time)} - ${displayText(r.closing_time)}</div></div>
+        <div class="ec-item"><div class="ec-label">Fuel</div><div class="ec-val">${displayText(fuelSummary(r))}</div></div>
+      </div>
+      ${r.remarks ? `<div class="ec-item" style="margin-top:8px"><div class="ec-label">Remarks</div><div class="ec-val">${escapeHTML(r.remarks)}</div></div>` : ''}
+      ${canEdit ? `<div class="ec-actions">
+        <button class="act-btn edit" onclick="openModal('${rowId}')">Edit</button>
+        <button class="act-btn del" onclick="deleteEntry('${rowId}')">Delete</button>
+      </div>` : ''}
+    </div>`;
+  }).join('');
+}
+
 function renderTable(rows) {
   const tbody = document.getElementById('logbookBody');
+  const cards = document.getElementById('logbookCards');
   if (!rows.length) {
     const isFiltered = document.getElementById('filterFrom').value ||
                        document.getElementById('filterTo').value ||
                        (document.getElementById('filterSearch')?.value || '').trim();
-    tbody.innerHTML = `<tr><td colspan="15"><div class="empty-state">
+    const emptyHtml = `<div class="empty-state">
       <div class="ei">${isFiltered ? 'Search' : 'Logbook'}</div>
       <div style="font-size:0.95rem;font-weight:600;margin-bottom:6px">${isFiltered ? 'No entries match your filters' : 'No entries yet'}</div>
       <div style="font-size:0.82rem;color:var(--text2);margin-bottom:16px">${isFiltered ? 'Try clearing filters or changing date range' : 'Add your first logbook entry to get started'}</div>
       ${!isFiltered && canManageEntries() ? `<button class="btn btn-primary" onclick="openModal()" style="margin:0 auto">+ Add First Entry</button>` : ''}
       ${isFiltered ? `<button class="btn btn-outline" onclick="clearFilters()" style="margin:0 auto">Clear Filters</button>` : ''}
-    </div></td></tr>`;
+    </div>`;
+    tbody.innerHTML = `<tr><td colspan="15">${emptyHtml}</td></tr>`;
+    if (cards) cards.innerHTML = emptyHtml;
     return;
   }
 
@@ -981,6 +1170,7 @@ function renderTable(rows) {
       </td>
     </tr>`;
   }).join('');
+  renderCards(rows);
 }
 
 function _computeStats(data) {
@@ -1000,14 +1190,15 @@ function _computeStats(data) {
 }
 
 async function updateStats() {
-  // If we have a full (unfiltered) cache, compute locally â€” zero DB calls
+  const today = new Date().toISOString().split('T')[0];
+  const firstOfMonth = today.slice(0,8) + '01';
+  // If unfiltered full cache is loaded, compute locally — zero DB calls
+  // Stats always reflect current month, independent of any active date filter
   if (_cacheLoaded && !_lastFromVal && !_lastToVal) {
     _computeStats(_allEntriesCache);
     return;
   }
-  // Otherwise fetch month data fresh
-  const today = new Date().toISOString().split('T')[0];
-  const firstOfMonth = today.slice(0,8) + '01';
+  // Otherwise fetch current month fresh
   const { data } = await db.from('logbook')
     .select('entry_date, starting_km, closing_km, vehicle_no, fuel_amount, fuel_litres, fuel_type, fuels')
     .gte('entry_date', firstOfMonth);
@@ -1016,7 +1207,12 @@ async function updateStats() {
 
 // â”€â”€â”€ AUTOCOMPLETE â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 async function loadAutocomplete() {
-  const { data } = await db.from('logbook').select('vehicle_no, driver_name, location').limit(300);
+  // Use cache if available — avoid extra DB call
+  let data = _cacheLoaded && _allEntriesCache.length ? _allEntriesCache : null;
+  if (!data) {
+    const res = await db.from('logbook').select('vehicle_no, driver_name, location').limit(300);
+    data = res.data;
+  }
   if (!data) return;
   const vehicles  = [...new Set(data.map(r => r.vehicle_no).filter(Boolean))];
   const drivers   = [...new Set(data.map(r => r.driver_name).filter(Boolean))];
@@ -1221,6 +1417,7 @@ function clearFilters() {
   document.getElementById('filterTo').value     = '';
   const s = document.getElementById('filterSearch');
   if (s) s.value = '';
+  clearMobileFilters();
   _invalidateCache();
   loadEntries();
 }
@@ -1311,7 +1508,7 @@ async function loadVehicleReport() {
   const grid = document.getElementById('vehicleReportGrid');
   grid.innerHTML = '<div style="color:var(--text2);padding:40px;text-align:center;grid-column:1/-1"><span class="spinner"></span> Loading...</div>';
 
-  let q = db.from('logbook').select('*');
+  let q = db.from('logbook').select('vehicle_no, vehicle_type, entry_date, starting_km, closing_km, fuel_type, fuel_litres, fuel_amount, fuels');
   const from = document.getElementById('vFilterFrom').value;
   const to   = document.getElementById('vFilterTo').value;
   if (from) q = q.gte('entry_date', from);
@@ -1360,7 +1557,7 @@ async function loadDriverReport() {
   const grid = document.getElementById('driverReportGrid');
   grid.innerHTML = '<div style="color:var(--text2);padding:40px;text-align:center;grid-column:1/-1"><span class="spinner"></span> Loading...</div>';
 
-  let q = db.from('logbook').select('*');
+  let q = db.from('logbook').select('driver_name, vehicle_no, entry_date, starting_km, closing_km');
   const from = document.getElementById('dFilterFrom').value;
   const to   = document.getElementById('dFilterTo').value;
   if (from) q = q.gte('entry_date', from);
@@ -1411,9 +1608,47 @@ function printLogbook() {
   document.getElementById('printRange').textContent = `${range} - Generated: ${new Date().toLocaleDateString('en-IN')}`;
   window.print();
 }
+
+function isTypingTarget(el) {
+  if (!el) return false;
+  const tag = (el.tagName || '').toLowerCase();
+  return tag === 'input' || tag === 'textarea' || tag === 'select' || el.isContentEditable;
+}
+
 // Close modal on outside click
 document.getElementById('modalOverlay').addEventListener('click', function(e) {
   if (e.target === this) closeModal();
+});
+document.getElementById('filterSheetOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeFilterSheet();
+});
+
+// Desktop keyboard shortcuts:
+// N => add entry, / => focus search, Esc => close modals
+document.addEventListener('keydown', function(e) {
+  const key = (e.key || '').toLowerCase();
+  if (key === 'escape') {
+    if (document.getElementById('modalOverlay').classList.contains('open')) closeModal();
+    if (document.getElementById('confirmOverlay').classList.contains('open')) closeConfirm();
+    if (document.getElementById('filterSheetOverlay').classList.contains('open')) closeFilterSheet();
+    return;
+  }
+
+  if (isTypingTarget(e.target)) return;
+  if (!currentUser) return;
+
+  if (key === 'n' && canManageEntries()) {
+    e.preventDefault();
+    if (document.getElementById('viewLogbook').classList.contains('active')) openModal();
+    return;
+  }
+
+  if (key === '/') {
+    e.preventDefault();
+    if (!document.getElementById('viewLogbook').classList.contains('active')) switchView('logbook');
+    const searchInput = document.getElementById('filterSearch');
+    if (searchInput) searchInput.focus();
+  }
 });
 
 // Swipe down to close modal on mobile
@@ -1485,73 +1720,6 @@ if ('serviceWorker' in navigator && ['http:', 'https:'].includes(location.protoc
     .catch(err => console.log('SW registration failed:', err));
 }
 
-if (false && 'serviceWorker' in navigator) {
-  const swCode = `
-const CACHE = 'kh-logbook-v1';
-const ASSETS = [
-  'https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&family=DM+Sans:wght@400;500&display=swap',
-  'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2',
-  'https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js'
-];
-
-self.addEventListener('install', e => {
-  self.skipWaiting();
-  e.waitUntil(
-    caches.open(CACHE).then(c => {
-      return Promise.allSettled(ASSETS.map(url => c.add(url).catch(() => {})));
-    })
-  );
-});
-
-self.addEventListener('activate', e => {
-  e.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
-    )
-  );
-  self.clients.claim();
-});
-
-self.addEventListener('fetch', e => {
-  if (e.request.method !== 'GET') return;
-  const url = new URL(e.request.url);
-  // Always network-first for Supabase API calls
-  if (url.hostname.includes('supabase.co')) {
-    e.respondWith(
-      fetch(e.request).catch(() => new Response(JSON.stringify({error:'offline'}), 
-        {headers:{'Content-Type':'application/json'}}))
-    );
-    return;
-  }
-  // Cache-first for static assets
-  e.respondWith(
-    caches.match(e.request).then(cached => cached || fetch(e.request).then(resp => {
-      if (resp.ok) {
-        const clone = resp.clone();
-        caches.open(CACHE).then(c => c.put(e.request, clone));
-      }
-      return resp;
-    }))
-  );
-});
-  `;
-  const blob = new Blob([swCode], {type: 'application/javascript'});
-  const swUrl = URL.createObjectURL(blob);
-  navigator.serviceWorker.register(swUrl, {scope: './'})
-    .then(reg => {
-      console.log('SW registered:', reg.scope);
-      // Check for updates
-      reg.addEventListener('updatefound', () => {
-        const newWorker = reg.installing;
-        newWorker.addEventListener('statechange', () => {
-          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-            console.log('New SW version available');
-          }
-        });
-      });
-    })
-    .catch(err => console.log('SW registration failed:', err));
-}
 
 // â”€â”€â”€ INSTALL PROMPT â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 let deferredPrompt;
